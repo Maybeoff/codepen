@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodePen</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>CodePen</h1>
+        <div class="controls">
+            <button id="run-btn">Run</button>
+            <button id="save-btn">Сохранить</button>
+            <button id="share-btn">Поделится</button>
+            <button id="copy-btn">Скопировать</button>
+            <select id="theme-select">
+                <option value="default">Light Theme</option>
+                <option value="dracula">Dark Theme</option>
+            </select>
+            <select id="library-select">
+                <option value="">No Library</option>
+                <option value="https://code.jquery.com/jquery-3.6.0.min.js">jQuery</option>
+                <option value="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js">Bootstrap JS</option>
+                <option value="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">Bootstrap CSS</option>
+            </select>
+        </div>
+    </header>
+    <main>
+        <div class="editor-container">
+            <div class="tabs">
+                <button class="tab active" data-tab="html">HTML</button>
+                <button class="tab" data-tab="css">CSS</button>
+                <button class="tab" data-tab="js">JS</button>
+            </div>
+            <div class="editors">
+                <div id="html-editor" class="editor active"></div>
+                <div id="css-editor" class="editor"></div>
+                <div id="js-editor" class="editor"></div>
+            </div>
+        </div>
+        <div class="preview-container">
+            <iframe id="preview" srcdoc="<html><body></body></html>"></iframe>
+        </div>
+        <div class="console-container">
+            <div id="console" class="console"></div>
+        </div>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
