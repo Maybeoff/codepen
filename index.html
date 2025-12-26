@@ -6,27 +6,43 @@
     <title>CodePen</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/solarized.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
         <h1>CodePen</h1>
         <div class="controls">
-            <button id="run-btn">Run</button>
-            <button id="save-btn">Сохранить</button>
-            <button id="share-btn">Поделится</button>
-            <button id="copy-btn">Скопировать</button>
+            <button id="run-btn" title="Ctrl+Enter">▶ Run</button>
+            <button id="format-btn" title="Форматировать код">🎨 Format</button>
+            <button id="save-btn" title="Ctrl+S">💾 Сохранить</button>
+            <button id="export-btn" title="Экспорт в ZIP">📦 Export</button>
+            <button id="share-btn">🔗 Поделится</button>
+            <button id="fullscreen-btn" title="Полный экран превью">⛶ Fullscreen</button>
             <input type="checkbox" id="ignore-alerts"> Игнорировать alert
-            <select id="theme-select">
-                <option value="default">Light Theme</option>
-                <option value="dracula">Dark Theme</option>
+            <select id="theme-select" title="Тема редактора">
+                <option value="default">Light</option>
+                <option value="dracula">Dracula</option>
+                <option value="monokai">Monokai</option>
+                <option value="material">Material</option>
+                <option value="solarized">Solarized</option>
             </select>
-            <select id="library-select">
+            <select id="library-select" title="Подключить библиотеку">
                 <option value="">No Library</option>
                 <option value="https://code.jquery.com/jquery-3.6.0.min.js">jQuery</option>
-                <option value="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js">Bootstrap JS</option>
+                <option value="https://unpkg.com/react@18/umd/react.development.js">React</option>
+                <option value="https://unpkg.com/vue@3/dist/vue.global.js">Vue 3</option>
+                <option value="https://cdn.tailwindcss.com">Tailwind CSS</option>
                 <option value="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">Bootstrap CSS</option>
+                <option value="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">Three.js</option>
             </select>
+            <select id="project-select" title="Выбрать проект">
+                <option value="default">Проект 1</option>
+            </select>
+            <button id="new-project-btn" title="Новый проект">+ Новый</button>
         </div>
     </header>
         <main>
@@ -35,6 +51,10 @@
                 <button class="tab active" data-tab="html">HTML</button>
                 <button class="tab" data-tab="css">CSS</button>
                 <button class="tab" data-tab="js">JS</button>
+                <div class="status-bar">
+                    <span id="cursor-info">Ln 1, Col 1</span>
+                    <span id="char-count">0 символов</span>
+                </div>
             </div>
             
             <div class="editors">
@@ -44,19 +64,55 @@
             </div>
 
             <div class="console-container">
+                <div class="console-header">
+                    <span>Console</span>
+                    <button id="clear-console" title="Очистить консоль">🗑</button>
+                </div>
                 <div id="console" class="console"></div>
             </div>
         </div>
 
+        <div class="resizer" id="resizer"></div>
+
         <div class="preview-container">
+            <div class="preview-header">
+                <span>Preview</span>
+                <button id="refresh-preview" title="Обновить превью">🔄</button>
+            </div>
             <iframe id="preview" srcdoc="<html><body></body></html>"></iframe>
         </div>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/html-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/css-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/javascript-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/standalone.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-html.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-postcss.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-babel.min.js"></script>
     <script src="script.js"></script>
+    
+    <!-- Toast notifications container -->
+    <div id="toast-container"></div>
+    
+    <!-- Fullscreen overlay -->
+    <div id="fullscreen-overlay" class="fullscreen-overlay">
+        <div class="fullscreen-header">
+            <span>Preview - Fullscreen</span>
+            <button id="exit-fullscreen">✕ Exit</button>
+        </div>
+        <iframe id="fullscreen-preview"></iframe>
+    </div>
 </body>
 </html>

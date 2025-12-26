@@ -1,52 +1,119 @@
-// Initialize editors
-const htmlEditor = CodeMirror(document.getElementById('html-editor'), {
-    mode: 'htmlmixed',
-    lineNumbers: true,
-    theme: 'default',
-    autoCloseBrackets: true,
-    autoCloseTags: true,
-    value: '<h1>Hello World</h1>'
-});
-
-const cssEditor = CodeMirror(document.getElementById('css-editor'), {
-    mode: 'css',
-    lineNumbers: true,
-    theme: 'default',
-    autoCloseBrackets: true,
-    value: 'body { background-color: #f0f0f0; }'
-});
-
-const jsEditor = CodeMirror(document.getElementById('js-editor'), {
-    mode: 'javascript',
-    lineNumbers: true,
-    theme: 'default',
-    autoCloseBrackets: true,
-    value: 'document.body.innerHTML += "<p>JS executed</p>";'
-});
-
-const editors = { html: htmlEditor, css: cssEditor, js: jsEditor };
+let editors = {};
 let currentTab = 'html';
+let currentProject = 'default';
+let projects = {};
+let isResizing = false;
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease forwards';
+        setTimeout(() => container.removeChild(toast), 300);
+    }, 3000);
+}
 
-// Tab switching
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        console.log('Tab clicked:', tab.dataset.tab);
-        document.querySelector('.tab.active').classList.remove('active');
-        document.querySelector('.editor.active').classList.remove('active');
-        tab.classList.add('active');
-        document.getElementById(tab.dataset.tab + '-editor').classList.add('active');
-        currentTab = tab.dataset.tab;
-        editors[currentTab].refresh();
+function updateStatusBar() {
+    const editor = editors[currentTab];
+    if (!editor) return;
+    
+    const cursor = editor.getCursor();
+    const content = editor.getValue();
+    
+    document.getElementById('cursor-info').textContent = `Ln ${cursor.line + 1}, Col ${cursor.ch + 1}`;
+    document.getElementById('char-count').textContent = `${content.length} символов`;
+}
+
+function initializeEditors() {
+    const commonOptions = {
+        lineNumbers: true,
+        theme: 'default',
+        autoCloseBrackets: true,
+        extraKeys: {
+            "Ctrl-Space": "autocomplete",
+            "Ctrl-/": "toggleComment",
+            "Ctrl-S": function() { saveProject(); return false; },
+            "Ctrl-Enter": function() { updatePreview(); return false; },
+            "F11": function() { toggleFullscreen(); return false; }
+        },
+        hintOptions: {
+            completeSingle: false
+        }
+    };
+
+    editors.html = CodeMirror(document.getElementById('html-editor'), {
+        ...commonOptions,
+        mode: 'htmlmixed',
+        autoCloseTags: true,
+        value: '<div class="container">\n  <h1>Hello World!</h1>\n  <p>Добро пожаловать в CodePen Pro</p>\n</div>'
     });
-});
 
-// Update preview
+    editors.css = CodeMirror(document.getElementById('css-editor'), {
+        ...commonOptions,
+        mode: 'css',
+        value: '.container {\n  max-width: 800px;\n  margin: 0 auto;\n  padding: 20px;\n  text-align: center;\n}\n\nh1 {\n  color: #667eea;\n  font-size: 2.5em;\n}\n\np {\n  color: #64748b;\n  font-size: 1.2em;\n}'
+    });
+
+    editors.js = CodeMirror(document.getElementById('js-editor'), {
+        ...commonOptions,
+        mode: 'javascript',
+        value: 'console.log("CodePen Pro загружен!");\n\n// Добавим интерактивности\ndocument.addEventListener("DOMContentLoaded", function() {\n  const h1 = document.querySelector("h1");\n  if (h1) {\n    h1.addEventListener("click", function() {\n      this.style.color = this.style.color === "red" ? "#667eea" : "red";\n    });\n  }\n});'
+    });
+
+    Object.values(editors).forEach(editor => {
+        editor.on('change', () => {
+            updatePreview();
+            updateStatusBar();
+        });
+        
+        editor.on('cursorActivity', updateStatusBar);
+    });
+
+    updateStatusBar();
+}
+
+function initializeTabs() {
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            switchTab(targetTab);
+        });
+    });
+}
+
+function switchTab(targetTab) {
+    const container = document.querySelector('.editor-container');
+    
+    document.querySelector('.tab.active').classList.remove('active');
+    document.querySelector('.editor.active').classList.remove('active');
+    
+    document.querySelector(`[data-tab="${targetTab}"]`).classList.add('active');
+    document.getElementById(targetTab + '-editor').classList.add('active');
+
+    if (targetTab === 'js') {
+        container.classList.add('js-active');
+    } else {
+        container.classList.remove('js-active');
+    }
+
+    currentTab = targetTab;
+    editors[currentTab].refresh();
+    updateStatusBar();
+}
+
 function updatePreview() {
-    console.log('Updating preview');
-    const html = htmlEditor.getValue();
-    const css = cssEditor.getValue();
-    const js = jsEditor.getValue();
+    const html = editors.html.getValue();
+    const css = editors.css.getValue();
+    const js = editors.js.getValue();
     const library = document.getElementById('library-select').value;
+    const shouldIgnoreAlerts = document.getElementById('ignore-alerts').checked;
+
+    document.getElementById('console').innerHTML = '';
+
     let libTag = '';
     if (library) {
         if (library.includes('.css')) {
@@ -55,306 +122,447 @@ function updatePreview() {
             libTag = `<script src="${library}"></script>`;
         }
     }
+
     const srcdoc = `
         <html>
         <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             ${libTag}
             <style>${css}</style>
         </head>
         <body>
             ${html}
-            <script>${js}</script>
             <script>
-                window.addEventListener('error', function(e) {
-                    parent.postMessage({type: 'error', message: e.message, filename: e.filename, lineno: e.lineno}, '*');
-                });
-                window.addEventListener('unhandledrejection', function(e) {
-                    parent.postMessage({type: 'error', message: e.reason}, '*');
-                });
-            </script>
-        </body>
-        </html>
-    `;
-    document.getElementById('preview').srcdoc = srcdoc;
-    // Clear console
-    document.getElementById('console').innerHTML = '';
-}
-
-// Event listeners for changes
-htmlEditor.on('change', updatePreview);
-cssEditor.on('change', updatePreview);
-jsEditor.on('change', updatePreview);
-
-// Run button
-document.getElementById('run-btn').addEventListener('click', () => {
-    console.log('Run button clicked');
-    updatePreview();
-});
-
-// Initial preview
-updatePreview();
-
-// Theme switching
-document.getElementById('theme-select').addEventListener('change', (e) => {
-    console.log('Theme changed to', e.target.value);
-    const theme = e.target.value;
-    Object.values(editors).forEach(editor => {
-        editor.setOption('theme', theme);
-    });
-});
-
-// Library selection
-document.getElementById('library-select').addEventListener('change', () => {
-    console.log('Library changed');
-    updatePreview();
-});
-
-// Save to localStorage
-document.getElementById('save-btn').addEventListener('click', () => {
-    console.log('Save button clicked');
-    const project = {
-        html: htmlEditor.getValue(),
-        css: cssEditor.getValue(),
-        js: jsEditor.getValue(),
-        library: document.getElementById('library-select').value
-    };
-    localStorage.setItem('codepen-project', JSON.stringify(project));
-    alert('Project saved!');
-});
-
-// Load from localStorage
-const saved = localStorage.getItem('codepen-project');
-if (saved) {
-    const project = JSON.parse(saved);
-    htmlEditor.setValue(project.html);
-    cssEditor.setValue(project.css);
-    jsEditor.setValue(project.js);
-    document.getElementById('library-select').value = project.library || '';
-    updatePreview();
-}
-
-// Share via URL (Сжатый формат)
-document.getElementById('share-btn').addEventListener('click', () => {
-    console.log('Share button clicked');
-    
-    // Собираем данные в один компактный объект
-    const projectData = {
-        h: htmlEditor.getValue(),
-        c: cssEditor.getValue(),
-        j: jsEditor.getValue(),
-        l: document.getElementById('library-select').value
-    };
-
-    // Сжимаем объект в одну строку
-    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(projectData));
-    
-    // Формируем URL с одним параметром data
-    const url = `${window.location.origin}${window.location.pathname}?data=${compressed}`;
-
-    navigator.clipboard.writeText(url)
-        .then(() => alert('Короткая ссылка скопирована!'))
-        .catch(err => {
-            console.error('Clipboard error:', err);
-            alert('Не удалось скопировать ссылку');
-        });
-});
-
-// Load from URL (Универсальный загрузчик)
-const urlParams = new URLSearchParams(window.location.search);
-const compressedData = urlParams.get('data');
-
-if (compressedData) {
-    // Если есть сжатые данные (новый формат)
-    try {
-        const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
-        const project = JSON.parse(decompressed);
-
-        if (project.h !== undefined) htmlEditor.setValue(project.h);
-        if (project.c !== undefined) cssEditor.setValue(project.c);
-        if (project.j !== undefined) jsEditor.setValue(project.j);
-        if (project.l !== undefined) {
-            document.getElementById('library-select').value = project.l;
-        }
-        console.log("Загружено из сжатого формата");
-    } catch (e) {
-        console.error('Ошибка при чтении сжатых данных:', e);
-    }
-} else {
-    // Если сжатых данных нет, проверяем старые параметры (обратная совместимость)
-    if (urlParams.has('html')) {
-        htmlEditor.setValue(decodeURIComponent(urlParams.get('html')));
-    }
-    if (urlParams.has('css')) {
-        cssEditor.setValue(decodeURIComponent(urlParams.get('css')));
-    }
-    if (urlParams.has('js')) {
-        jsEditor.setValue(decodeURIComponent(urlParams.get('js')));
-    }
-    if (urlParams.has('lib')) {
-        document.getElementById('library-select').value = decodeURIComponent(urlParams.get('lib'));
-    }
-}
-
-// Сразу после загрузки обновляем окно просмотра
-updatePreview();
-
-// Copy code
-document.getElementById('copy-btn').addEventListener('click', () => {
-    console.log('Copy button clicked');
-    const code = editors[currentTab].getValue();
-    navigator.clipboard.writeText(code).then(() => alert('Code copied to clipboard!')).catch(err => console.error('Clipboard error:', err));
-});
-
-// Console for errors
-window.addEventListener('message', (e) => {
-    if (e.data.type === 'error') {
-        const consoleDiv = document.getElementById('console');
-        const errorMsg = document.createElement('div');
-        errorMsg.textContent = `Error: ${e.data.message}`;
-        consoleDiv.appendChild(errorMsg);
-        consoleDiv.scrollTop = consoleDiv.scrollHeight;
-    }
-});
-
-// ... (ваши переменные инициализации редакторов остаются теми же)
-
-// Обновленное переключение вкладок
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        const targetTab = tab.dataset.tab;
-        const container = document.querySelector('.editor-container');
-
-        // Переключение активных классов для кнопок и окон
-        document.querySelector('.tab.active').classList.remove('active');
-        document.querySelector('.editor.active').classList.remove('active');
-        
-        tab.classList.add('active');
-        document.getElementById(targetTab + '-editor').classList.add('active');
-
-        // НОВОЕ: Показываем консоль только на вкладке JS
-        if (targetTab === 'js') {
-            container.classList.add('js-active');
-        } else {
-            container.classList.remove('js-active');
-        }
-
-        currentTab = targetTab;
-        editors[currentTab].refresh();
-    });
-});
-
-// Обновленное обновление превью с перехватом логов
-function updatePreview() {
-    const html = htmlEditor.getValue();
-    const css = cssEditor.getValue();
-    const js = jsEditor.getValue();
-    
-    // Очищаем консоль перед каждым запуском
-    document.getElementById('console').innerHTML = '';
-
-    const srcdoc = `
-        <html>
-        <head>
-            <style>${css}</style>
-        </head>
-        <body>
-            ${html}
-            <script>
-                // Перехват функций консоли
-                const originalLog = console.log;
-                const originalError = console.error;
-
-                console.log = function(...args) {
-                    window.parent.postMessage({type: 'log', content: args.join(' ')}, '*');
-                    originalLog.apply(console, args);
-                };
-
-                console.error = function(...args) {
-                    window.parent.postMessage({type: 'error', content: args.join(' ')}, '*');
-                    originalError.apply(console, args);
-                };
-
-                // Ошибки синтаксиса или выполнения
-                window.onerror = function(message, source, lineno) {
-                    window.parent.postMessage({type: 'error', content: message + " (Линия: " + lineno + ")"}, '*');
-                };
-            <\/script>
-            <script>${js}<\/script>
-        </body>
-        </html>
-    `;
-    document.getElementById('preview').srcdoc = srcdoc;
-}
-
-// НОВОЕ: Слушатель для вывода сообщений в консоль
-window.addEventListener('message', (e) => {
-    if (e.data.type === 'log' || e.data.type === 'error') {
-        const consoleDiv = document.getElementById('console');
-        const line = document.createElement('div');
-        
-        // Стилизуем строку (ошибки — красным, логи — белым/зеленым)
-        line.style.color = e.data.type === 'error' ? '#ff5555' : '#f8f8f2';
-        line.style.borderBottom = '1px solid #333';
-        line.style.padding = '2px 0';
-        line.textContent = `> ${e.data.content}`;
-        
-        consoleDiv.appendChild(line);
-        consoleDiv.scrollTop = consoleDiv.scrollHeight; // Прокрутка вниз
-    }
-});
-
-
-function updatePreview() {
-    const html = htmlEditor.getValue();
-    const css = cssEditor.getValue();
-    const js = jsEditor.getValue();
-    
-    // Получаем состояние чекбокса
-    const shouldIgnoreAlerts = document.getElementById('ignore-alerts').checked;
-
-    // Очищаем консоль
-    document.getElementById('console').innerHTML = '';
-
-    const srcdoc = `
-        <html>
-        <head>
-            <style>${css}</style>
-        </head>
-        <body>
-            ${html}
-            <script>
-                // --- БЛОК ПОДАВЛЕНИЯ ALERT ---
                 if (${shouldIgnoreAlerts}) {
-                    window.alert = function() { console.log("Alert заблокирован вывод AlertЖ", arguments[0]); };
-                    window.confirm = function() { console.log("Confirm заблокирован"); return true; };
-                    window.prompt = function() { console.log("Prompt заблокирован"); return null; };
+                    window.alert = function(msg) { 
+                        console.log("🚫 Alert заблокирован:", msg); 
+                    };
+                    window.confirm = function(msg) { 
+                        console.log("🚫 Confirm заблокирован:", msg); 
+                        return true; 
+                    };
+                    window.prompt = function(msg) { 
+                        console.log("🚫 Prompt заблокирован:", msg); 
+                        return null; 
+                    };
                 }
 
-                // Перехват функций консоли (ваш существующий код)
                 const originalLog = console.log;
                 const originalError = console.error;
+                const originalWarn = console.warn;
 
                 console.log = function(...args) {
-                    window.parent.postMessage({type: 'log', content: args.map(a => 
-                        typeof a === 'object' ? JSON.stringify(a) : a
-                    ).join(' ')}, '*');
+                    window.parent.postMessage({
+                        type: 'log', 
+                        content: args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : a).join(' ')
+                    }, '*');
                     originalLog.apply(console, args);
                 };
 
                 console.error = function(...args) {
-                    window.parent.postMessage({type: 'error', content: args.join(' ')}, '*');
+                    window.parent.postMessage({
+                        type: 'error', 
+                        content: args.join(' ')
+                    }, '*');
                     originalError.apply(console, args);
                 };
 
-                window.onerror = function(message, source, lineno) {
-                    window.parent.postMessage({type: 'error', content: message + " (Линия: " + lineno + ")"}, '*');
+                console.warn = function(...args) {
+                    window.parent.postMessage({
+                        type: 'warn', 
+                        content: args.join(' ')
+                    }, '*');
+                    originalWarn.apply(console, args);
                 };
-            <\/script>
-            <script>${js}<\/script>
+
+                window.onerror = function(message, source, lineno, colno, error) {
+                    window.parent.postMessage({
+                        type: 'error', 
+                        content: \`❌ \${message} (Строка: \${lineno})\`
+                    }, '*');
+                };
+
+                window.addEventListener('unhandledrejection', function(event) {
+                    window.parent.postMessage({
+                        type: 'error', 
+                        content: \`❌ Promise rejected: \${event.reason}\`
+                    }, '*');
+                });
+            </script>
+            <script>${js}</script>
         </body>
         </html>
     `;
+
     document.getElementById('preview').srcdoc = srcdoc;
+    
+    const fullscreenPreview = document.getElementById('fullscreen-preview');
+    if (fullscreenPreview.srcdoc) {
+        fullscreenPreview.srcdoc = srcdoc;
+    }
 }
 
-document.getElementById('ignore-alerts').addEventListener('change', updatePreview);
+function initializeProjects() {
+    loadProjects();
+    updateProjectSelect();
+    
+    document.getElementById('project-select').addEventListener('change', (e) => {
+        switchProject(e.target.value);
+    });
+    
+    document.getElementById('new-project-btn').addEventListener('click', createNewProject);
+}
+
+function loadProjects() {
+    const saved = localStorage.getItem('codepen-projects');
+    if (saved) {
+        projects = JSON.parse(saved);
+    } else {
+        projects = {
+            default: {
+                name: 'Проект 1',
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: ''
+            }
+        };
+    }
+}
+
+function saveProjects() {
+    localStorage.setItem('codepen-projects', JSON.stringify(projects));
+}
+
+function updateProjectSelect() {
+    const select = document.getElementById('project-select');
+    select.innerHTML = '';
+    
+    Object.keys(projects).forEach(key => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = projects[key].name;
+        if (key === currentProject) option.selected = true;
+        select.appendChild(option);
+    });
+}
+
+function switchProject(projectKey) {
+    saveCurrentProject();
+    currentProject = projectKey;
+    const project = projects[projectKey];
+    
+    editors.html.setValue(project.html);
+    editors.css.setValue(project.css);
+    editors.js.setValue(project.js);
+    document.getElementById('library-select').value = project.library || '';
+    
+    updatePreview();
+    showToast(`Переключено на "${project.name}"`, 'success');
+}
+
+function saveCurrentProject() {
+    projects[currentProject] = {
+        name: projects[currentProject].name,
+        html: editors.html.getValue(),
+        css: editors.css.getValue(),
+        js: editors.js.getValue(),
+        library: document.getElementById('library-select').value
+    };
+    saveProjects();
+}
+
+function createNewProject() {
+    const name = prompt('Название нового проекта:');
+    if (!name) return;
+    
+    const key = 'project_' + Date.now();
+    projects[key] = {
+        name: name,
+        html: '<h1>Новый проект</h1>',
+        css: 'h1 { color: #333; }',
+        js: 'console.log("Новый проект создан!");',
+        library: ''
+    };
+    
+    saveProjects();
+    updateProjectSelect();
+    switchProject(key);
+}
+
+function formatCode() {
+    const editor = editors[currentTab];
+    const code = editor.getValue();
+    
+    try {
+        let formatted;
+        
+        switch (currentTab) {
+            case 'html':
+                formatted = prettier.format(code, {
+                    parser: 'html',
+                    plugins: prettierPlugins,
+                    tabWidth: 2,
+                    useTabs: false
+                });
+                break;
+            case 'css':
+                formatted = prettier.format(code, {
+                    parser: 'css',
+                    plugins: prettierPlugins,
+                    tabWidth: 2,
+                    useTabs: false
+                });
+                break;
+            case 'js':
+                formatted = prettier.format(code, {
+                    parser: 'babel',
+                    plugins: prettierPlugins,
+                    tabWidth: 2,
+                    useTabs: false,
+                    semi: true,
+                    singleQuote: true
+                });
+                break;
+        }
+        
+        editor.setValue(formatted);
+        showToast('Код отформатирован!', 'success');
+    } catch (error) {
+        showToast('Ошибка форматирования: ' + error.message, 'error');
+    }
+}
+
+async function exportToZip() {
+    const zip = new JSZip();
+    
+    const html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${projects[currentProject].name}</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    ${editors.html.getValue()}
+    <script src="script.js"></script>
+</body>
+</html>`;
+
+    zip.file("index.html", html);
+    zip.file("style.css", editors.css.getValue());
+    zip.file("script.js", editors.js.getValue());
+    
+    const readme = `# ${projects[currentProject].name}
+
+Проект создан в CodePen Pro
+
+## Файлы:
+- index.html - основная HTML структура
+- style.css - стили CSS
+- script.js - JavaScript код
+
+## Запуск:
+Откройте index.html в браузере.
+`;
+    
+    zip.file("README.md", readme);
+    
+    try {
+        const content = await zip.generateAsync({type: "blob"});
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${projects[currentProject].name.replace(/[^a-zA-Z0-9]/g, '_')}.zip`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showToast('Проект экспортирован!', 'success');
+    } catch (error) {
+        showToast('Ошибка экспорта: ' + error.message, 'error');
+    }
+}
+
+function toggleFullscreen() {
+    const overlay = document.getElementById('fullscreen-overlay');
+    const fullscreenPreview = document.getElementById('fullscreen-preview');
+    
+    if (overlay.classList.contains('active')) {
+        overlay.classList.remove('active');
+    } else {
+        overlay.classList.add('active');
+        fullscreenPreview.srcdoc = document.getElementById('preview').srcdoc;
+    }
+}
+
+function initializeResizer() {
+    const resizer = document.getElementById('resizer');
+    const editorContainer = document.querySelector('.editor-container');
+    const previewContainer = document.querySelector('.preview-container');
+    const main = document.querySelector('main');
+    
+    resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        
+        const mainRect = main.getBoundingClientRect();
+        const newEditorWidth = ((e.clientX - mainRect.left) / mainRect.width) * 100;
+        
+        if (newEditorWidth >= 25 && newEditorWidth <= 75) {
+            const previewWidth = 100 - newEditorWidth;
+            
+            editorContainer.style.flex = `0 0 ${newEditorWidth}%`;
+            previewContainer.style.flex = `0 0 ${previewWidth}%`;
+        }
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            
+            setTimeout(() => {
+                Object.values(editors).forEach(editor => editor.refresh());
+            }, 100);
+        }
+    });
+}
+
+function initializeEventListeners() {
+    document.getElementById('run-btn').addEventListener('click', updatePreview);
+    document.getElementById('format-btn').addEventListener('click', formatCode);
+    document.getElementById('save-btn').addEventListener('click', () => {
+        saveCurrentProject();
+        showToast('Проект сохранён!', 'success');
+    });
+    document.getElementById('export-btn').addEventListener('click', exportToZip);
+    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+    document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
+
+    document.getElementById('share-btn').addEventListener('click', () => {
+        saveCurrentProject();
+        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
+            h: editors.html.getValue(),
+            c: editors.css.getValue(),
+            j: editors.js.getValue(),
+            l: document.getElementById('library-select').value
+        }));
+        
+        const url = `${window.location.origin}${window.location.pathname}?data=${compressed}`;
+        navigator.clipboard.writeText(url)
+            .then(() => showToast('Ссылка скопирована!', 'success'))
+            .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
+    });
+    
+    document.getElementById('theme-select').addEventListener('change', (e) => {
+        const theme = e.target.value;
+        Object.values(editors).forEach(editor => {
+            editor.setOption('theme', theme);
+        });
+        showToast(`Тема изменена на ${theme}`, 'info');
+    });
+    
+    document.getElementById('library-select').addEventListener('change', updatePreview);
+    document.getElementById('ignore-alerts').addEventListener('change', updatePreview);
+    
+    document.getElementById('clear-console').addEventListener('click', () => {
+        document.getElementById('console').innerHTML = '';
+        showToast('Консоль очищена', 'info');
+    });
+    
+    document.getElementById('refresh-preview').addEventListener('click', updatePreview);
+
+    window.addEventListener('message', (e) => {
+        if (e.data.type) {
+            const consoleDiv = document.getElementById('console');
+            const line = document.createElement('div');
+            
+            switch (e.data.type) {
+                case 'log':
+                    line.style.color = '#a0aec0';
+                    line.innerHTML = `<span style="color: #68d391;">▶</span> ${e.data.content}`;
+                    break;
+                case 'error':
+                    line.style.color = '#fc8181';
+                    line.innerHTML = `<span style="color: #fc8181;">✕</span> ${e.data.content}`;
+                    break;
+                case 'warn':
+                    line.style.color = '#f6e05e';
+                    line.innerHTML = `<span style="color: #f6e05e;">⚠</span> ${e.data.content}`;
+                    break;
+            }
+            
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case 's':
+                    e.preventDefault();
+                    saveCurrentProject();
+                    showToast('Проект сохранён!', 'success');
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    updatePreview();
+                    break;
+            }
+        }
+        
+        if (e.key === 'F11') {
+            e.preventDefault();
+            toggleFullscreen();
+        }
+    });
+}
+
+function loadFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const compressedData = urlParams.get('data');
+
+    if (compressedData) {
+        try {
+            const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
+            const project = JSON.parse(decompressed);
+
+            if (project.h !== undefined) editors.html.setValue(project.h);
+            if (project.c !== undefined) editors.css.setValue(project.c);
+            if (project.j !== undefined) editors.js.setValue(project.j);
+            if (project.l !== undefined) {
+                document.getElementById('library-select').value = project.l;
+            }
+            
+            showToast('Проект загружен из ссылки!', 'success');
+        } catch (e) {
+            showToast('Ошибка при загрузке из ссылки', 'error');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initializeEditors();
+    initializeTabs();
+    initializeProjects();
+    initializeResizer();
+    initializeEventListeners();
+    loadFromURL();
+    updatePreview();
+    
+    showToast('CodePen Pro готов к работе! 🚀', 'success');
+});
+
+window.addEventListener('beforeunload', () => {
+    saveCurrentProject();
+});
