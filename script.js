@@ -212,6 +212,7 @@ function initializeProjects() {
     });
     
     document.getElementById('new-project-btn').addEventListener('click', createNewProject);
+    document.getElementById('delete-project-btn').addEventListener('click', deleteProject);
 }
 
 function loadProjects() {
@@ -289,6 +290,29 @@ function createNewProject() {
     saveProjects();
     updateProjectSelect();
     switchProject(key);
+}
+
+function deleteProject() {
+    const projectKeys = Object.keys(projects);
+    
+    if (projectKeys.length <= 1) {
+        showToast('Нельзя удалить последний проект!', 'error');
+        return;
+    }
+    
+    const projectName = projects[currentProject].name;
+    if (!confirm(`Удалить проект "${projectName}"?`)) return;
+    
+    delete projects[currentProject];
+    saveProjects();
+    
+    const remainingKeys = Object.keys(projects);
+    currentProject = remainingKeys[0];
+    
+    updateProjectSelect();
+    switchProject(currentProject);
+    
+    showToast(`Проект "${projectName}" удалён`, 'success');
 }
 
 function formatCode() {
