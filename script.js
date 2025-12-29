@@ -375,7 +375,7 @@ async function exportToZip() {
         const url = URL.createObjectURL(content);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${projects[currentProject].name.replace(/[^a-zA-Z0-9]/g, '_')}.zip`;
+        a.download = `${projects[currentProject].name}.zip`;
         a.click();
         URL.revokeObjectURL(url);
         
