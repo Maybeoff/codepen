@@ -25,7 +25,6 @@
             <button id="format-btn" title="Форматировать код">🎨 Format</button>
             <button id="fullscreen-btn" title="Полный экран превью">⛶ Fullscreen</button>
             <button id="snow-btn" title="Включить/выключить снегопад">❄️ Snow</button>
-            <button id="short-link-btn" title="Создать короткую ссылку">🔗 Link</button>
             <button id="settings-btn" title="Настройки">⚙️ Настройки</button>
         </div>
     </header>
@@ -185,6 +184,15 @@
                         <button id="modal-share-btn" class="settings-btn primary">🔗 Поделиться</button>
                     </div>
                 </div>
+
+                <div class="settings-section">
+                    <h3>🔗 Короткие ссылки</h3>
+                    <div class="setting-item project-buttons">
+                        <button id="modal-create-link-btn" class="settings-btn success">🔗 Создать ссылку</button>
+                        <button id="modal-view-links-btn" class="settings-btn primary">📋 Мои ссылки</button>
+                        <button id="modal-edit-link-btn" class="settings-btn primary">✏️ Редактировать ссылку</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -232,16 +240,17 @@
         <iframe id="fullscreen-preview"></iframe>
     </div>
 
-    <!-- Short Link Modal -->
+    <!-- Short Link Management Modal -->
     <div id="link-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>🔗 Создать короткую ссылку</h2>
+                <h2 id="link-modal-title">🔗 Управление короткими ссылками</h2>
                 <button id="close-link-modal" class="close-btn">✕</button>
             </div>
             <div class="modal-body">
-                <div class="settings-section">
-                    <h3>Текущий проект</h3>
+                <!-- Создание новой ссылки -->
+                <div id="create-link-section" class="settings-section">
+                    <h3>Создать новую ссылку</h3>
                     <div class="setting-item">
                         <label>Название проекта:</label>
                         <input type="text" id="current-project-name" readonly>
@@ -251,11 +260,39 @@
                         <textarea id="project-url" rows="3" readonly></textarea>
                     </div>
                     <div class="setting-item project-buttons">
-                        <button id="create-short-link" class="settings-btn success">🔗 Создать короткую ссылку</button>
-                        <button id="view-saved-links" class="settings-btn primary">📋 Мои ссылки</button>
+                        <button id="create-short-link" class="settings-btn success">� Со здать короткую ссылку</button>
                     </div>
                 </div>
 
+                <!-- Просмотр сохраненных ссылок -->
+                <div id="view-links-section" class="settings-section" style="display: none;">
+                    <h3>Ваши короткие ссылки</h3>
+                    <div id="saved-links-list"></div>
+                </div>
+
+                <!-- Редактирование ссылки -->
+                <div id="edit-link-section" class="settings-section" style="display: none;">
+                    <h3>Редактировать ссылку</h3>
+                    <div class="setting-item">
+                        <label>ID ссылки:</label>
+                        <input type="text" id="edit-link-id" placeholder="Введите ID ссылки">
+                    </div>
+                    <div class="setting-item">
+                        <label>Секретный ключ:</label>
+                        <input type="password" id="edit-secret-key" placeholder="Введите секретный ключ">
+                    </div>
+                    <div class="setting-item">
+                        <label>Новый URL:</label>
+                        <textarea id="edit-new-url" rows="3" placeholder="Введите новый URL"></textarea>
+                    </div>
+                    <div class="setting-item project-buttons">
+                        <button id="get-link-info" class="settings-btn primary">📋 Получить информацию</button>
+                        <button id="update-link-url" class="settings-btn success">✏️ Обновить ссылку</button>
+                        <button id="use-current-project" class="settings-btn primary">📝 Использовать текущий проект</button>
+                    </div>
+                </div>
+
+                <!-- Результат -->
                 <div class="settings-section">
                     <h3>Результат</h3>
                     <div id="link-result" class="link-result"></div>

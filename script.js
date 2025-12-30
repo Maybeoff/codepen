@@ -925,7 +925,6 @@ function initializeEventListeners() {
     document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
     document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('snow-btn').addEventListener('click', toggleSnowfall);
-    document.getElementById('short-link-btn').addEventListener('click', openShortLinkModal);
     document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
 
     // Settings modal events
@@ -940,7 +939,9 @@ function initializeEventListeners() {
         if (e.target.id === 'link-modal') closeShortLinkModal();
     });
     document.getElementById('create-short-link').addEventListener('click', createShortLink);
-    document.getElementById('view-saved-links').addEventListener('click', viewSavedLinks);
+    document.getElementById('get-link-info').addEventListener('click', getLinkInfo);
+    document.getElementById('update-link-url').addEventListener('click', updateLinkUrl);
+    document.getElementById('use-current-project').addEventListener('click', useCurrentProject);
 
     // Settings controls
     document.getElementById('modal-theme-select').addEventListener('change', (e) => {
@@ -1044,6 +1045,17 @@ function initializeEventListeners() {
         navigator.clipboard.writeText(url)
             .then(() => showToast('Ссылка скопирована!', 'success'))
             .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
+    });
+
+    // Short link buttons in settings
+    document.getElementById('modal-create-link-btn').addEventListener('click', () => {
+        openShortLinkModal('create');
+    });
+    document.getElementById('modal-view-links-btn').addEventListener('click', () => {
+        openShortLinkModal('view');
+    });
+    document.getElementById('modal-edit-link-btn').addEventListener('click', () => {
+        openShortLinkModal('edit');
     });
 
     document.getElementById('clear-console').addEventListener('click', () => {
@@ -1283,16 +1295,41 @@ setTimeout(() => {
 }, 2000);
 
 // Функции для работы с короткими ссылками
-function openShortLinkModal() {
+function openShortLinkModal(mode = 'create') {
     const modal = document.getElementById('link-modal');
+    const title = document.getElementById('link-modal-title');
     
-    // Заполняем информацию о текущем проекте
-    const projectName = projects[currentProject]?.name || 'Текущий проект';
-    document.getElementById('current-project-name').value = projectName;
+    // Скрываем все секции
+    document.getElementById('create-link-section').style.display = 'none';
+    document.getElementById('view-links-section').style.display = 'none';
+    document.getElementById('edit-link-section').style.display = 'none';
     
-    // Генерируем URL проекта
-    const projectUrl = generateProjectUrl();
-    document.getElementById('project-url').value = projectUrl;
+    // Показываем нужную секцию
+    switch(mode) {
+        case 'create':
+            title.textContent = '🔗 Создать короткую ссылку';
+            document.getElementById('create-link-section').style.display = 'block';
+            
+            // Заполняем информацию о текущем проекте
+            const projectName = projects[currentProject]?.name || 'Текущий проект';
+            document.getElementById('current-project-name').value = projectName;
+            
+            // Генерируем URL проекта
+            const projectUrl = generateProjectUrl();
+            document.getElementById('project-url').value = projectUrl;
+            break;
+            
+        case 'view':
+            title.textContent = '📋 Мои короткие ссылки';
+            document.getElementById('view-links-section').style.display = 'block';
+            displaySavedLinks();
+            break;
+            
+        case 'edit':
+            title.textContent = '✏️ Редактировать ссылку';
+            document.getElementById('edit-link-section').style.display = 'block';
+            break;
+    }
     
     // Очищаем результат
     document.getElementById('link-result').innerHTML = '';
@@ -1411,6 +1448,138 @@ function viewSavedLinks() {
     });
     
     showResult(resultText, 'success');
+}
+
+function displaySavedLinks() {
+    const savedLinks = getSavedShortLinks();
+    const container = document.getElementById('saved-links-list');
+    
+    if (savedLinks.length === 0) {
+        container.innerHTML = '<p>У вас пока нет сохраненных ссылок</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    savedLinks.reverse().forEach((link, index) => {
+        const date = new Date(link.createdAt).toLocaleDateString('ru-RU');
+        const linkItem = document.createElement('div');
+        linkItem.className = 'saved-link-item';
+        
+        linkItem.innerHTML = `
+            <div class="link-name">${link.projectName}</div>
+            <div class="link-url" onclick="copyToClipboard('${link.shortUrl}')">${link.shortUrl}</div>
+            <div class="link-date">Создана: ${date}</div>
+            <div class="link-actions">
+                <button class="settings-btn primary" onclick="editSavedLink('${link.id}', '${link.secretKey}')">✏️ Редактировать</button>
+                <button class="settings-btn primary" onclick="copyToClipboard('${link.shortUrl}')">📋 Копировать</button>
+            </div>
+        `;
+        
+        container.appendChild(linkItem);
+    });
+}
+
+async function getLinkInfo() {
+    const linkId = document.getElementById('edit-link-id').value.trim();
+    
+    if (!linkId) {
+        showResult('Введите ID ссылки', 'error');
+        return;
+    }
+    
+    try {
+        showResult('Получение информации...', '');
+        
+        const response = await fetch(`https://click.fem-boy.ru/api/links/code/${linkId}`);
+        const result = await response.json();
+        
+        if (response.ok) {
+            const resultText = `📋 Информация о ссылке:
+
+🔗 Код: ${result.code}
+🌐 URL: ${result.url}
+📅 Создана: ${result.created_at}
+🔒 Защищена ключом: ${result.hasSecretKey ? 'Да' : 'Нет'}
+✏️ Можно редактировать: ${result.canEdit ? 'Да' : 'Нет'}`;
+            
+            showResult(resultText, 'success');
+        } else {
+            showResult(`❌ Ошибка: ${result.error || 'Ссылка не найдена'}`, 'error');
+        }
+        
+    } catch (error) {
+        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
+    }
+}
+
+async function updateLinkUrl() {
+    const linkId = document.getElementById('edit-link-id').value.trim();
+    const secretKey = document.getElementById('edit-secret-key').value.trim();
+    const newUrl = document.getElementById('edit-new-url').value.trim();
+    
+    if (!linkId || !secretKey || !newUrl) {
+        showResult('Заполните все поля', 'error');
+        return;
+    }
+    
+    try {
+        showResult('Обновление ссылки...', '');
+        
+        const response = await fetch(`https://click.fem-boy.ru/api/links/code/${linkId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                url: newUrl,
+                secretKey: secretKey
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showResult(`✅ Ссылка обновлена успешно!\n\n🔗 ${result.code}\n🌐 Новый URL: ${result.url}`, 'success');
+            
+            // Обновляем в localStorage если есть
+            updateSavedLink(linkId, newUrl);
+            
+        } else {
+            showResult(`❌ Ошибка: ${result.error || 'Не удалось обновить ссылку'}`, 'error');
+        }
+        
+    } catch (error) {
+        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
+    }
+}
+
+function useCurrentProject() {
+    const projectUrl = generateProjectUrl();
+    document.getElementById('edit-new-url').value = projectUrl;
+    showToast('URL текущего проекта добавлен', 'info');
+}
+
+function editSavedLink(linkId, secretKey) {
+    document.getElementById('edit-link-id').value = linkId;
+    document.getElementById('edit-secret-key').value = secretKey;
+    openShortLinkModal('edit');
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text)
+        .then(() => showToast('Скопировано в буфер обмена!', 'success'))
+        .catch(() => showToast('Не удалось скопировать', 'error'));
+}
+
+function updateSavedLink(linkId, newUrl) {
+    let savedLinks = getSavedShortLinks();
+    const linkIndex = savedLinks.findIndex(link => link.id === linkId);
+    
+    if (linkIndex !== -1) {
+        savedLinks[linkIndex].url = newUrl;
+        localStorage.setItem('codepen-short-links', JSON.stringify(savedLinks));
+    }
 }
 
 function showResult(text, type) {

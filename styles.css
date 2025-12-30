@@ -650,6 +650,55 @@ button:focus {
     min-height: 60px;
 }
 
+#saved-links-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.saved-link-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.saved-link-item:last-child {
+    margin-bottom: 0;
+}
+
+.saved-link-item .link-name {
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.saved-link-item .link-url {
+    color: #667eea;
+    word-break: break-all;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.saved-link-item .link-date {
+    color: #6c757d;
+    font-size: 11px;
+}
+
+.saved-link-item .link-actions {
+    margin-top: 8px;
+}
+
+.saved-link-item .link-actions button {
+    font-size: 11px;
+    padding: 3px 8px;
+    margin-right: 5px;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
