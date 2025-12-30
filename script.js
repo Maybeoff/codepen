@@ -8,7 +8,7 @@ let injectThemeCSS = false;
 
 // Theme CSS templates
 const themeCSSTemplates = {
-    light: `/* Светлая тема */
+    light: `/* Начало глобальной светлой темы */
 :root {
     --bg-color: #ffffff;
     --text-color: #333333;
@@ -19,9 +19,10 @@ const themeCSSTemplates = {
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-}`,
+}
+/* Конец глобальной темы */`,
     
-    dark: `/* Тёмная тема */
+    dark: `/* Начало глобальной тёмной темы */
 :root {
     --bg-color: #1a1a1a;
     --text-color: #e0e0e0;
@@ -32,9 +33,10 @@ body {
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-}`,
+}
+/* Конец глобальной темы */`,
     
-    blue: `/* Синяя тема */
+    blue: `/* Начало глобальной синей темы */
 :root {
     --bg-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --text-color: #ffffff;
@@ -45,9 +47,10 @@ body {
 body {
     background: var(--bg-color);
     color: var(--text-color);
-}`,
+}
+/* Конец глобальной темы */`,
     
-    purple: `/* Фиолетовая тема */
+    purple: `/* Начало глобальной фиолетовой темы */
 :root {
     --bg-color: linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%);
     --text-color: #ffffff;
@@ -58,7 +61,8 @@ body {
 body {
     background: var(--bg-color);
     color: var(--text-color);
-}`
+}
+/* Конец глобальной темы */`
 };
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -118,8 +122,8 @@ function injectThemeCSSToEditor() {
     const currentCSS = editors.css.getValue();
     const themeCSS = themeCSSTemplates[globalTheme];
     
-    // Удаляем предыдущий код темы если есть
-    const cleanCSS = currentCSS.replace(/\/\* (Светлая|Тёмная|Синяя|Фиолетовая) тема \*\/[\s\S]*?(?=\/\*|$)/g, '').trim();
+    // Удаляем предыдущий код темы если есть (между маркерами)
+    const cleanCSS = currentCSS.replace(/\/\* Начало глобальной [\wа-яё]+ темы \*\/[\s\S]*?\/\* Конец глобальной темы \*\/\n*/gi, '').trim();
     
     // Добавляем новый код темы в начало
     const newCSS = themeCSS + '\n\n' + cleanCSS;
@@ -139,7 +143,7 @@ function toggleThemeInjection(enabled) {
         // Удаляем код темы из CSS только если редактор инициализирован
         if (editors && editors.css) {
             const currentCSS = editors.css.getValue();
-            const cleanCSS = currentCSS.replace(/\/\* (Светлая|Тёмная|Синяя|Фиолетовая) тема \*\/[\s\S]*?(?=\/\*|$)/g, '').trim();
+            const cleanCSS = currentCSS.replace(/\/\* Начало глобальной [\wа-яё]+ темы \*\/[\s\S]*?\/\* Конец глобальной темы \*\/\n*/gi, '').trim();
             editors.css.setValue(cleanCSS);
             updatePreview();
         }
@@ -233,10 +237,19 @@ function initializeEditors() {
         value: 'console.log("CodePen Pro загружен!");\n\n// Добавим интерактивности\ndocument.addEventListener("DOMContentLoaded", function() {\n  const h1 = document.querySelector("h1");\n  if (h1) {\n    h1.addEventListener("click", function() {\n      this.style.color = this.style.color === "red" ? "#667eea" : "red";\n    });\n  }\n});'
     });
 
+    // Debounce для автосохранения
+    let saveTimeout;
+    
     Object.values(editors).forEach(editor => {
         editor.on('change', () => {
             updatePreview();
             updateStatusBar();
+            
+            // Автосохранение с задержкой 1 секунда
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                saveCurrentProject();
+            }, 1000);
         });
         
         editor.on('cursorActivity', updateStatusBar);
@@ -455,15 +468,18 @@ function loadProjects() {
             currentProject = keys[0];
         }
     } else {
+        // Дефолтный проект с начальными значениями
         projects = {
             default: {
                 name: 'Проект 1',
-                html: editors.html.getValue(),
-                css: editors.css.getValue(),
-                js: editors.js.getValue(),
+                html: '<div class="container">\n  <h1>Hello World!</h1>\n  <p>Добро пожаловать в CodePen Pro</p>\n</div>',
+                css: '.container {\n  max-width: 800px;\n  margin: 0 auto;\n  padding: 20px;\n  text-align: center;\n}\n\nh1 {\n  color: #667eea;\n  font-size: 2.5em;\n}\n\np {\n  color: #64748b;\n  font-size: 1.2em;\n}',
+                js: 'console.log("CodePen Pro загружен!");\n\n// Добавим интерактивности\ndocument.addEventListener("DOMContentLoaded", function() {\n  const h1 = document.querySelector("h1");\n  if (h1) {\n    h1.addEventListener("click", function() {\n      this.style.color = this.style.color === "red" ? "#667eea" : "red";\n    });\n  }\n});',
                 library: ''
             }
         };
+        // Сохраняем дефолтный проект
+        saveProjects();
     }
 }
 
@@ -511,6 +527,7 @@ function switchProject(projectKey) {
 
 function saveCurrentProject() {
     if (!projects[currentProject]) return;
+    if (!editors || !editors.html || !editors.css || !editors.js) return;
     
     const librarySelect = document.getElementById('library-select');
     const libraryValue = librarySelect ? librarySelect.value : '';
