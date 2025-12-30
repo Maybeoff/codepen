@@ -1451,7 +1451,7 @@ function getProjectLink(projectId) {
     return projectLinks[projectId] || null;
 }
 
-function deleteProjectLink(projectId) {
+function removeProjectLinkFromStorage(projectId) {
     let projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
     delete projectLinks[projectId];
     localStorage.setItem('codepen-project-links', JSON.stringify(projectLinks));
@@ -1515,7 +1515,7 @@ async function deleteProjectLink() {
     }
     
     // Удаляем из localStorage
-    deleteProjectLink(currentProject);
+    removeProjectLinkFromStorage(currentProject);
     
     showResult('🗑 Ссылка проекта удалена из локального хранилища.', 'success');
     document.getElementById('current-project-link').value = 'Ссылка не создана';
