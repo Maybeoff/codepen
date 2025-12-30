@@ -940,6 +940,7 @@ function initializeEventListeners() {
         if (e.target.id === 'link-modal') closeShortLinkModal();
     });
     document.getElementById('create-short-link').addEventListener('click', createShortLink);
+    document.getElementById('view-saved-links').addEventListener('click', viewSavedLinks);
 
     // Settings controls
     document.getElementById('modal-theme-select').addEventListener('change', (e) => {
@@ -1346,32 +1347,70 @@ async function createShortLink() {
         const result = await response.json();
         
         if (result.success) {
-            const resultText = `✅ Короткая ссылка создана успешно!
-
-🔗 Короткая ссылка: https://click.fem-boy.ru/${result.code}
-📋 ID: ${result.id}
-🔑 Секретный ключ: ${result.secretKey}
-
-⚠️ ВАЖНО: Сохраните секретный ключ!
-Он потребуется для изменения ссылки в будущем.
-
-📱 Ссылка готова к использованию: https://click.fem-boy.ru/${result.code}`;
+            const shortUrl = `https://click.fem-boy.ru/${result.code}`;
             
-            showResult(resultText, 'success');
+            // Сохраняем в localStorage
+            saveShortLink({
+                id: result.id,
+                code: result.code,
+                url: projectUrl,
+                shortUrl: shortUrl,
+                secretKey: result.secretKey,
+                projectName: projects[currentProject]?.name || 'Проект',
+                createdAt: new Date().toISOString()
+            });
+            
+            // Простой вывод - только ссылка
+            showResult(shortUrl, 'success');
             
             // Копируем короткую ссылку в буфер обмена
-            const shortUrl = `https://click.fem-boy.ru/${result.code}`;
             navigator.clipboard.writeText(shortUrl)
                 .then(() => showToast('Короткая ссылка скопирована в буфер обмена!', 'success'))
-                .catch(() => showToast('Короткая ссылка создана (см. модальное окно)', 'success'));
+                .catch(() => showToast('Короткая ссылка создана', 'success'));
                 
         } else {
-            showResult(`❌ Ошибка создания ссылки: ${result.error || 'Неизвестная ошибка'}`, 'error');
+            showResult(`❌ Ошибка: ${result.error || 'Неизвестная ошибка'}`, 'error');
         }
         
     } catch (error) {
         showResult(`❌ Ошибка сети: ${error.message}`, 'error');
     }
+}
+
+function saveShortLink(linkData) {
+    let savedLinks = JSON.parse(localStorage.getItem('codepen-short-links') || '[]');
+    savedLinks.push(linkData);
+    
+    // Ограничиваем количество сохраненных ссылок (последние 50)
+    if (savedLinks.length > 50) {
+        savedLinks = savedLinks.slice(-50);
+    }
+    
+    localStorage.setItem('codepen-short-links', JSON.stringify(savedLinks));
+}
+
+function getSavedShortLinks() {
+    return JSON.parse(localStorage.getItem('codepen-short-links') || '[]');
+}
+
+function viewSavedLinks() {
+    const savedLinks = getSavedShortLinks();
+    
+    if (savedLinks.length === 0) {
+        showResult('У вас пока нет сохраненных ссылок', '');
+        return;
+    }
+    
+    let resultText = `📋 Ваши короткие ссылки (${savedLinks.length}):\n\n`;
+    
+    savedLinks.reverse().forEach((link, index) => {
+        const date = new Date(link.createdAt).toLocaleDateString('ru-RU');
+        resultText += `${index + 1}. ${link.projectName}\n`;
+        resultText += `   🔗 ${link.shortUrl}\n`;
+        resultText += `   📅 ${date}\n\n`;
+    });
+    
+    showResult(resultText, 'success');
 }
 
 function showResult(text, type) {
