@@ -49,6 +49,11 @@ button:hover, select:hover {
     background: #f0f0f0;
 }
 
+#snow-btn.active {
+    background: #4CAF50 !important;
+    color: white !important;
+}
+
 input[type="checkbox"] {
     margin-right: 5px;
 }
@@ -624,4 +629,51 @@ button:focus {
     header h1 { font-size: 1.2em; }
     .controls { flex-wrap: wrap; gap: 4px; }
     button, select { font-size: 11px; padding: 4px 6px; }
+}
+
+/* Эффект снегопада */
+.snowflake {
+    position: fixed;
+    top: -50px;
+    color: #fff;
+    user-select: none;
+    pointer-events: none;
+    z-index: 1000;
+    font-size: 1em;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+    animation-fill-mode: forwards;
+}
+
+@keyframes snowfall {
+    0% {
+        transform: translateY(-50px) translateX(0px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(calc(100vh + 50px)) translateX(100px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes snowfall-reverse {
+    0% {
+        transform: translateY(-50px) translateX(0px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(calc(100vh + 50px)) translateX(-100px) rotate(-360deg);
+        opacity: 0;
+    }
 }

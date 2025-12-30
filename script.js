@@ -855,6 +855,7 @@ function initializeEventListeners() {
     document.getElementById('format-btn').addEventListener('click', formatCode);
     document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
     document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('snow-btn').addEventListener('click', toggleSnowfall);
     document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
 
     // Settings modal events
@@ -1057,3 +1058,117 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('beforeunload', () => {
     saveCurrentProject();
 });
+
+// Эффект снегопада
+let snowfallActive = localStorage.getItem('codepen-snowfall') !== 'false'; // по умолчанию включен
+let snowfallInterval = null;
+
+function createSnowflake() {
+    if (!snowfallActive) return;
+    
+    const snowflake = document.createElement('div');
+    snowflake.classList.add('snowflake');
+    
+    // Разные типы снежинок
+    const snowflakeTypes = ['❄', '❅', '❆', '✻', '✼', '❋'];
+    snowflake.innerHTML = snowflakeTypes[Math.floor(Math.random() * snowflakeTypes.length)];
+    
+    // Случайная позиция по горизонтали
+    snowflake.style.left = Math.random() * 100 + 'vw';
+    
+    // Случайный размер
+    const size = Math.random() * 0.8 + 0.8; // от 0.8 до 1.6
+    snowflake.style.fontSize = size + 'em';
+    
+    // Случайная продолжительность анимации
+    const duration = Math.random() * 8 + 8; // от 8 до 16 секунд
+    
+    // Выбираем случайную анимацию
+    const animationType = Math.random() > 0.5 ? 'snowfall' : 'snowfall-reverse';
+    snowflake.style.animation = `${animationType} ${duration}s linear forwards`;
+    
+    // Случайная прозрачность
+    const opacity = Math.random() * 0.6 + 0.4; // от 0.4 до 1.0
+    snowflake.style.opacity = opacity;
+    
+    document.body.appendChild(snowflake);
+    
+    // Удаляем снежинку после завершения анимации
+    setTimeout(() => {
+        if (snowflake.parentNode) {
+            snowflake.parentNode.removeChild(snowflake);
+        }
+    }, duration * 1000 + 1000); // добавляем 1 секунду запаса
+}
+
+function startSnowfall() {
+    if (snowfallInterval) return;
+    
+    snowfallActive = true;
+    snowfallInterval = setInterval(createSnowflake, 200); // уменьшили интервал
+    
+    // Создаем начальные снежинки
+    for (let i = 0; i < 15; i++) {
+        setTimeout(createSnowflake, i * 150);
+    }
+    
+    // Обновляем кнопку
+    const snowBtn = document.getElementById('snow-btn');
+    if (snowBtn) {
+        snowBtn.style.background = '#4CAF50';
+        snowBtn.style.color = 'white';
+        snowBtn.title = 'Выключить снегопад';
+    }
+}
+
+function stopSnowfall() {
+    snowfallActive = false;
+    
+    if (snowfallInterval) {
+        clearInterval(snowfallInterval);
+        snowfallInterval = null;
+    }
+    
+    // Удаляем все существующие снежинки
+    const snowflakes = document.querySelectorAll('.snowflake');
+    snowflakes.forEach(snowflake => {
+        if (snowflake.parentNode) {
+            snowflake.parentNode.removeChild(snowflake);
+        }
+    });
+    
+    // Обновляем кнопку
+    const snowBtn = document.getElementById('snow-btn');
+    if (snowBtn) {
+        snowBtn.style.background = '';
+        snowBtn.style.color = '';
+        snowBtn.title = 'Включить снегопад';
+    }
+}
+
+function toggleSnowfall() {
+    if (snowfallActive) {
+        stopSnowfall();
+        localStorage.setItem('codepen-snowfall', 'false');
+        showToast('Снегопад выключен ❄️', 'info');
+    } else {
+        startSnowfall();
+        localStorage.setItem('codepen-snowfall', 'true');
+        showToast('Снегопад включен ❄️', 'success');
+    }
+}
+
+// Запускаем снегопад после загрузки страницы, если он был включен
+setTimeout(() => {
+    if (snowfallActive) {
+        startSnowfall();
+    } else {
+        // Обновляем кнопку для выключенного состояния
+        const snowBtn = document.getElementById('snow-btn');
+        if (snowBtn) {
+            snowBtn.style.background = '';
+            snowBtn.style.color = '';
+            snowBtn.title = 'Включить снегопад';
+        }
+    }
+}, 2000);
