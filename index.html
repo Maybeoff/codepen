@@ -101,9 +101,24 @@
                         </select>
                     </div>
                     <div class="setting-item">
+                        <label for="modal-global-theme-select">Глобальная тема интерфейса:</label>
+                        <select id="modal-global-theme-select">
+                            <option value="light">Светлая</option>
+                            <option value="dark">Тёмная</option>
+                            <option value="blue">Синяя</option>
+                            <option value="purple">Фиолетовая</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
                         <label>
                             <input type="checkbox" id="modal-ignore-alerts"> 
                             Игнорировать alert/confirm/prompt
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="modal-inject-theme-css"> 
+                            Использовать глобальную тему в CSS сайта
                         </label>
                     </div>
                 </div>
@@ -171,7 +186,14 @@
         <select id="project-select">
             <option value="default">Проект 1</option>
         </select>
+        <select id="global-theme-select">
+            <option value="light">Светлая</option>
+            <option value="dark">Тёмная</option>
+            <option value="blue">Синяя</option>
+            <option value="purple">Фиолетовая</option>
+        </select>
         <input type="checkbox" id="ignore-alerts">
+        <input type="checkbox" id="inject-theme-css">
     </div>
     
     <!-- Toast notifications container -->

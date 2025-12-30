@@ -3,6 +3,63 @@ let currentTab = 'html';
 let currentProject = 'default';
 let projects = {};
 let isResizing = false;
+let globalTheme = 'light';
+let injectThemeCSS = false;
+
+// Theme CSS templates
+const themeCSSTemplates = {
+    light: `/* Светлая тема */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --border-color: #e0e0e0;
+    --accent-color: #667eea;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}`,
+    
+    dark: `/* Тёмная тема */
+:root {
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --border-color: #444444;
+    --accent-color: #667eea;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}`,
+    
+    blue: `/* Синяя тема */
+:root {
+    --bg-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --text-color: #ffffff;
+    --border-color: rgba(255, 255, 255, 0.2);
+    --accent-color: #ffffff;
+}
+
+body {
+    background: var(--bg-color);
+    color: var(--text-color);
+}`,
+    
+    purple: `/* Фиолетовая тема */
+:root {
+    --bg-color: linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%);
+    --text-color: #ffffff;
+    --border-color: rgba(255, 255, 255, 0.2);
+    --accent-color: #ffffff;
+}
+
+body {
+    background: var(--bg-color);
+    color: var(--text-color);
+}`
+};
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
@@ -15,6 +72,77 @@ function showToast(message, type = 'info') {
         toast.style.animation = 'slideOut 0.3s ease forwards';
         setTimeout(() => container.removeChild(toast), 300);
     }, 3000);
+}
+
+function applyGlobalTheme(theme) {
+    // Удаляем все существующие классы тем
+    document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple');
+    
+    // Применяем новую тему
+    if (theme !== 'light') {
+        document.body.classList.add(`theme-${theme}`);
+    }
+    
+    globalTheme = theme;
+    
+    // Сохраняем настройку
+    localStorage.setItem('codepen-global-theme', theme);
+    
+    // Если включена инъекция CSS темы, обновляем CSS редактор
+    if (injectThemeCSS) {
+        injectThemeCSSToEditor();
+    }
+}
+
+function injectThemeCSSToEditor() {
+    if (!injectThemeCSS || !themeCSSTemplates[globalTheme]) return;
+    
+    const currentCSS = editors.css.getValue();
+    const themeCSS = themeCSSTemplates[globalTheme];
+    
+    // Удаляем предыдущий код темы если есть
+    const cleanCSS = currentCSS.replace(/\/\* (Светлая|Тёмная|Синяя|Фиолетовая) тема \*\/[\s\S]*?(?=\/\*|$)/g, '').trim();
+    
+    // Добавляем новый код темы в начало
+    const newCSS = themeCSS + '\n\n' + cleanCSS;
+    
+    editors.css.setValue(newCSS);
+    updatePreview();
+}
+
+function toggleThemeInjection(enabled) {
+    injectThemeCSS = enabled;
+    localStorage.setItem('codepen-inject-theme-css', enabled);
+    
+    if (enabled) {
+        injectThemeCSSToEditor();
+        showToast('CSS темы добавлен в редактор', 'success');
+    } else {
+        // Удаляем код темы из CSS
+        const currentCSS = editors.css.getValue();
+        const cleanCSS = currentCSS.replace(/\/\* (Светлая|Тёмная|Синяя|Фиолетовая) тема \*\/[\s\S]*?(?=\/\*|$)/g, '').trim();
+        editors.css.setValue(cleanCSS);
+        updatePreview();
+        showToast('CSS темы удален из редактора', 'info');
+    }
+}
+
+function loadGlobalThemeSettings() {
+    const savedTheme = localStorage.getItem('codepen-global-theme');
+    const savedInjectCSS = localStorage.getItem('codepen-inject-theme-css') === 'true';
+    
+    if (savedTheme) {
+        globalTheme = savedTheme;
+        applyGlobalTheme(savedTheme);
+    }
+    
+    if (savedInjectCSS) {
+        injectThemeCSS = savedInjectCSS;
+        const injectCheckbox = document.getElementById('inject-theme-css');
+        if (injectCheckbox) {
+            injectCheckbox.checked = savedInjectCSS;
+        }
+    }
 }
 
 function updateStatusBar() {
@@ -231,6 +359,8 @@ function openSettingsModal() {
     const themeSelect = document.getElementById('theme-select');
     const librarySelect = document.getElementById('library-select');
     const ignoreAlertsCheckbox = document.getElementById('ignore-alerts');
+    const globalThemeSelect = document.getElementById('global-theme-select');
+    const injectThemeCSSCheckbox = document.getElementById('inject-theme-css');
     
     document.getElementById('modal-theme-select').value = 
         themeSelect ? themeSelect.value : 'default';
@@ -238,6 +368,8 @@ function openSettingsModal() {
         librarySelect ? librarySelect.value : '';
     document.getElementById('modal-ignore-alerts').checked = 
         ignoreAlertsCheckbox ? ignoreAlertsCheckbox.checked : false;
+    document.getElementById('modal-global-theme-select').value = globalTheme;
+    document.getElementById('modal-inject-theme-css').checked = injectThemeCSS;
     
     // Обновляем список проектов в модальном окне
     updateModalProjectSelect();
@@ -582,7 +714,17 @@ function initializeEventListeners() {
         Object.values(editors).forEach(editor => {
             editor.setOption('theme', theme);
         });
-        showToast(`Тема изменена на ${theme}`, 'info');
+        showToast(`Тема редактора изменена на ${theme}`, 'info');
+    });
+
+    document.getElementById('modal-global-theme-select').addEventListener('change', (e) => {
+        const theme = e.target.value;
+        applyGlobalTheme(theme);
+        showToast(`Глобальная тема изменена на ${theme}`, 'success');
+    });
+
+    document.getElementById('modal-inject-theme-css').addEventListener('change', (e) => {
+        toggleThemeInjection(e.target.checked);
     });
 
     document.getElementById('modal-library-select').addEventListener('change', (e) => {
@@ -715,6 +857,7 @@ function loadFromURL() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadGlobalThemeSettings();
     initializeEditors();
     initializeTabs();
     initializeProjects();
