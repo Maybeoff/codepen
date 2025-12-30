@@ -206,12 +206,17 @@ function initializeEditors() {
         lineNumbers: true,
         theme: 'default',
         autoCloseBrackets: true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
         extraKeys: {
             "Ctrl-Space": "autocomplete",
             "Ctrl-/": "toggleComment",
             "Ctrl-S": function() { saveCurrentProject(); return false; },
             "Ctrl-Enter": function() { updatePreview(); return false; },
-            "F11": function() { toggleFullscreen(); return false; }
+            "F11": function() { toggleFullscreen(); return false; },
+            "Ctrl-F": "findPersistent",
+            "Ctrl-H": "replace",
+            "Ctrl-G": "jumpToLine"
         },
         hintOptions: {
             completeSingle: false
@@ -703,6 +708,79 @@ async function exportToZip() {
     }
 }
 
+async function importFromZip(file) {
+    try {
+        const zip = await JSZip.loadAsync(file);
+        
+        let htmlContent = '';
+        let cssContent = '';
+        let jsContent = '';
+        
+        // Ищем файлы в архиве
+        for (const [filename, zipEntry] of Object.entries(zip.files)) {
+            if (zipEntry.dir) continue;
+            
+            const name = filename.toLowerCase();
+            const content = await zipEntry.async('string');
+            
+            if (name.endsWith('.html') || name.endsWith('.htm')) {
+                // Извлекаем только содержимое body
+                const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+                if (bodyMatch) {
+                    // Убираем script теги из body
+                    htmlContent = bodyMatch[1].replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').trim();
+                } else {
+                    htmlContent = content;
+                }
+            } else if (name.endsWith('.css') && !name.includes('min.')) {
+                cssContent = content;
+            } else if (name.endsWith('.js') && !name.includes('min.')) {
+                jsContent = content;
+            }
+        }
+        
+        // Создаём новый проект с импортированным содержимым
+        const projectName = file.name.replace('.zip', '');
+        const key = 'project_' + Date.now();
+        
+        projects[key] = {
+            name: projectName,
+            html: htmlContent || '<h1>Импортированный проект</h1>',
+            css: cssContent || '/* CSS стили */',
+            js: jsContent || '// JavaScript код',
+            library: ''
+        };
+        
+        currentProject = key;
+        saveProjects();
+        updateProjectSelect();
+        updateModalProjectSelect();
+        
+        editors.html.setValue(projects[key].html);
+        editors.css.setValue(projects[key].css);
+        editors.js.setValue(projects[key].js);
+        
+        updatePreview();
+        showToast(`Проект "${projectName}" импортирован!`, 'success');
+        
+    } catch (error) {
+        showToast('Ошибка импорта: ' + error.message, 'error');
+    }
+}
+
+function openImportDialog() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.zip';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            importFromZip(file);
+        }
+    };
+    input.click();
+}
+
 function toggleFullscreen() {
     const overlay = document.getElementById('fullscreen-overlay');
     const fullscreenPreview = document.getElementById('fullscreen-preview');
@@ -713,6 +791,23 @@ function toggleFullscreen() {
         overlay.classList.add('active');
         fullscreenPreview.srcdoc = document.getElementById('preview').srcdoc;
     }
+}
+
+function setPreviewSize(size) {
+    const wrapper = document.querySelector('.preview-wrapper');
+    const buttons = document.querySelectorAll('.preview-size-btn');
+    
+    // Убираем все классы размеров
+    wrapper.classList.remove('desktop', 'tablet', 'mobile');
+    
+    // Добавляем нужный класс
+    wrapper.classList.add(size);
+    
+    // Обновляем активную кнопку
+    buttons.forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`preview-${size}`).classList.add('active');
+    
+    localStorage.setItem('codepen-preview-size', size);
 }
 
 function initializeResizer() {
@@ -827,6 +922,7 @@ function initializeEventListeners() {
         showToast('Проект сохранён!', 'success');
     });
     document.getElementById('modal-export-btn').addEventListener('click', exportToZip);
+    document.getElementById('modal-import-btn').addEventListener('click', openImportDialog);
     document.getElementById('modal-share-btn').addEventListener('click', () => {
         saveCurrentProject();
         const librarySelect = document.getElementById('library-select');
@@ -851,6 +947,15 @@ function initializeEventListeners() {
     });
     
     document.getElementById('refresh-preview').addEventListener('click', updatePreview);
+    
+    // Preview size buttons
+    document.getElementById('preview-desktop').addEventListener('click', () => setPreviewSize('desktop'));
+    document.getElementById('preview-tablet').addEventListener('click', () => setPreviewSize('tablet'));
+    document.getElementById('preview-mobile').addEventListener('click', () => setPreviewSize('mobile'));
+    
+    // Восстанавливаем сохранённый размер превью
+    const savedSize = localStorage.getItem('codepen-preview-size') || 'desktop';
+    setPreviewSize(savedSize);
 
     window.addEventListener('message', (e) => {
         if (e.data.type) {
@@ -933,11 +1038,18 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeEditors();
     initializeTabs();
     initializeProjects();
-    loadGlobalThemeSettings(); // Перенесли после инициализации редакторов
+    loadGlobalThemeSettings();
     initializeResizer();
     initializeEventListeners();
     loadFromURL();
     updatePreview();
+    
+    // Регистрация Service Worker для PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(() => console.log('Service Worker зарегистрирован'))
+            .catch((error) => console.log('Ошибка регистрации SW:', error));
+    }
     
     showToast('CodePen Pro готов к работе! 🚀', 'success');
 });

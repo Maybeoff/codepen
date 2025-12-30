@@ -120,3 +120,28 @@ body.theme-dark .toast {
     color: #e0e0e0 !important;
     border-color: #444 !important;
 }
+
+
+/* Search Dialog Dark */
+body.theme-dark .CodeMirror-dialog {
+    background: #2d2d2d !important;
+    color: #e0e0e0 !important;
+    border-bottom-color: #444 !important;
+}
+
+body.theme-dark .CodeMirror-dialog input {
+    background: #3a3a3a !important;
+    color: #e0e0e0 !important;
+    border-color: #555 !important;
+}
+
+body.theme-dark .CodeMirror-dialog button {
+    background: #3a3a3a !important;
+    color: #e0e0e0 !important;
+    border-color: #555 !important;
+}
+
+body.theme-dark .CodeMirror-foldmarker {
+    background: #3a3a3a !important;
+    color: #667eea !important;
+}

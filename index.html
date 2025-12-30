@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodePen</title>
+    <title>CodePen Pro</title>
+    <meta name="description" content="Онлайн редактор кода HTML, CSS и JavaScript">
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
@@ -14,7 +19,7 @@
 </head>
 <body>
     <header>
-        <h1>CodePen</h1>
+        <h1>CodePen Pro</h1>
         <div class="controls">
             <button id="run-btn" title="Ctrl+Enter">▶ Run</button>
             <button id="format-btn" title="Форматировать код">🎨 Format</button>
@@ -54,9 +59,16 @@
         <div class="preview-container">
             <div class="preview-header">
                 <span>Preview</span>
-                <button id="refresh-preview" title="Обновить превью">🔄</button>
+                <div class="preview-controls">
+                    <button id="preview-desktop" class="preview-size-btn active" title="Desktop">🖥️</button>
+                    <button id="preview-tablet" class="preview-size-btn" title="Tablet">📱</button>
+                    <button id="preview-mobile" class="preview-size-btn" title="Mobile">📲</button>
+                    <button id="refresh-preview" title="Обновить превью">🔄</button>
+                </div>
             </div>
-            <iframe id="preview" srcdoc="<html><body></body></html>"></iframe>
+            <div class="preview-wrapper">
+                <iframe id="preview" srcdoc="<html><body></body></html>"></iframe>
+            </div>
         </div>
     </main>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
@@ -74,6 +86,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/xml-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/comment-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/jump-to-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/standalone.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-html.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-postcss.min.js"></script>
@@ -158,6 +178,7 @@
                     <div class="setting-item project-buttons">
                         <button id="modal-save-btn" class="settings-btn primary">💾 Сохранить проект</button>
                         <button id="modal-export-btn" class="settings-btn primary">📦 Экспорт в ZIP</button>
+                        <button id="modal-import-btn" class="settings-btn primary">📥 Импорт из ZIP</button>
                         <button id="modal-share-btn" class="settings-btn primary">🔗 Поделиться</button>
                     </div>
                 </div>
