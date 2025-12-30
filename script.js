@@ -154,12 +154,20 @@ function toggleThemeInjection(enabled) {
 function loadGlobalThemeSettings() {
     const savedTheme = localStorage.getItem('codepen-global-theme') || 'light';
     const savedInjectCSS = localStorage.getItem('codepen-inject-theme-css') === 'true';
+    const savedEditorTheme = localStorage.getItem('codepen-editor-theme') || 'default';
     
     globalTheme = savedTheme;
     injectThemeCSS = savedInjectCSS;
     
     // Применяем тему сразу
     applyGlobalTheme(savedTheme);
+    
+    // Применяем тему редактора если редакторы уже инициализированы
+    if (editors && Object.keys(editors).length > 0) {
+        Object.values(editors).forEach(editor => {
+            editor.setOption('theme', savedEditorTheme);
+        });
+    }
     
     // Если включена инъекция CSS и редакторы уже инициализированы, применяем CSS тему
     if (savedInjectCSS && editors && editors.css) {
@@ -176,6 +184,16 @@ function loadGlobalThemeSettings() {
         const modalGlobalThemeSelect = document.getElementById('modal-global-theme-select');
         if (modalGlobalThemeSelect) {
             modalGlobalThemeSelect.value = savedTheme;
+        }
+        
+        const themeSelect = document.getElementById('theme-select');
+        if (themeSelect) {
+            themeSelect.value = savedEditorTheme;
+        }
+        
+        const modalThemeSelect = document.getElementById('modal-theme-select');
+        if (modalThemeSelect) {
+            modalThemeSelect.value = savedEditorTheme;
         }
         
         const injectCheckbox = document.getElementById('inject-theme-css');
@@ -202,9 +220,11 @@ function updateStatusBar() {
 }
 
 function initializeEditors() {
+    const savedEditorTheme = localStorage.getItem('codepen-editor-theme') || 'default';
+    
     const commonOptions = {
         lineNumbers: true,
-        theme: 'default',
+        theme: savedEditorTheme,
         autoCloseBrackets: true,
         foldGutter: true,
         gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
@@ -870,6 +890,16 @@ function initializeEventListeners() {
         Object.values(editors).forEach(editor => {
             editor.setOption('theme', theme);
         });
+        
+        // Сохраняем тему редактора
+        localStorage.setItem('codepen-editor-theme', theme);
+        
+        // Синхронизируем со скрытым элементом
+        const themeSelect = document.getElementById('theme-select');
+        if (themeSelect) {
+            themeSelect.value = theme;
+        }
+        
         showToast(`Тема редактора изменена на ${theme}`, 'info');
     });
 
