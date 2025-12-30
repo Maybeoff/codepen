@@ -1161,6 +1161,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFromURL();
     updatePreview();
     
+    // Очищаем дубликаты ссылок при первой загрузке
+    const cleanupDone = localStorage.getItem('codepen-cleanup-done');
+    if (!cleanupDone) {
+        localStorage.removeItem('codepen-short-links');
+        localStorage.setItem('codepen-cleanup-done', 'true');
+    }
+    
     // Регистрация Service Worker для PWA
     if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
         navigator.serviceWorker.register('./sw.js')
@@ -1442,8 +1449,7 @@ function saveProjectLink(projectId, linkData) {
     projectLinks[projectId] = linkData;
     localStorage.setItem('codepen-project-links', JSON.stringify(projectLinks));
     
-    // Также сохраняем в общий список для совместимости
-    saveShortLink(linkData);
+    // НЕ сохраняем в общий список, чтобы избежать дубликатов
 }
 
 function getProjectLink(projectId) {
@@ -1548,7 +1554,10 @@ function viewSavedLinks() {
 }
 
 function displaySavedLinks() {
-    const savedLinks = getSavedShortLinks();
+    // Получаем ссылки из хранилища проектов
+    const projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
+    const savedLinks = Object.values(projectLinks);
+    
     const container = document.getElementById('saved-links-list');
     
     if (savedLinks.length === 0) {
@@ -1558,7 +1567,10 @@ function displaySavedLinks() {
     
     container.innerHTML = '';
     
-    savedLinks.reverse().forEach((link, index) => {
+    // Сортируем по дате создания (новые сначала)
+    savedLinks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    savedLinks.forEach((link, index) => {
         const date = new Date(link.createdAt).toLocaleDateString('ru-RU');
         const linkItem = document.createElement('div');
         linkItem.className = 'saved-link-item';
@@ -1580,6 +1592,12 @@ function copyToClipboard(text) {
     navigator.clipboard.writeText(text)
         .then(() => showToast('Скопировано в буфер обмена!', 'success'))
         .catch(() => showToast('Не удалось скопировать', 'error'));
+}
+
+// Функция для очистки дубликатов (можно вызвать один раз для очистки)
+function cleanupDuplicateLinks() {
+    localStorage.removeItem('codepen-short-links');
+    showToast('Дубликаты ссылок очищены', 'info');
 }
 
 function showResult(text, type) {
