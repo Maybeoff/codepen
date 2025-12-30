@@ -8,6 +8,7 @@ const urlsToCache = [
     './themes/blue.css',
     './themes/purple.css',
     './manifest.json',
+    './sw.js',
     'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js',

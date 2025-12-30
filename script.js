@@ -253,6 +253,7 @@ function initializeEditors() {
         extraKeys: {
             "Ctrl-Space": "autocomplete",
             "Ctrl-/": "toggleComment",
+            "Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); },
             "Ctrl-S": function() { saveCurrentProject(); return false; },
             "Ctrl-Enter": function() { updatePreview(); return false; },
             "F11": function() { toggleFullscreen(); return false; },
@@ -269,18 +270,36 @@ function initializeEditors() {
         ...commonOptions,
         mode: 'htmlmixed',
         autoCloseTags: true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        extraKeys: {
+            ...commonOptions.extraKeys,
+            "Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }
+        },
         value: '<div class="container">\n  <h1>Hello World!</h1>\n  <p>Добро пожаловать в CodePen Pro</p>\n</div>'
     });
 
     editors.css = CodeMirror(document.getElementById('css-editor'), {
         ...commonOptions,
         mode: 'css',
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        extraKeys: {
+            ...commonOptions.extraKeys,
+            "Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }
+        },
         value: '.container {\n  max-width: 800px;\n  margin: 0 auto;\n  padding: 20px;\n  text-align: center;\n}\n\nh1 {\n  color: #667eea;\n  font-size: 2.5em;\n}\n\np {\n  color: #64748b;\n  font-size: 1.2em;\n}'
     });
 
     editors.js = CodeMirror(document.getElementById('js-editor'), {
         ...commonOptions,
         mode: 'javascript',
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+        extraKeys: {
+            ...commonOptions.extraKeys,
+            "Ctrl-Q": function(cm){ cm.foldCode(cm.getCursor()); }
+        },
         value: 'console.log("CodePen Pro загружен!");\n\n// Добавим интерактивности\ndocument.addEventListener("DOMContentLoaded", function() {\n  const h1 = document.querySelector("h1");\n  if (h1) {\n    h1.addEventListener("click", function() {\n      this.style.color = this.style.color === "red" ? "#667eea" : "red";\n    });\n  }\n});'
     });
 
