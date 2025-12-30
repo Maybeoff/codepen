@@ -75,18 +75,22 @@ function showToast(message, type = 'info') {
 }
 
 function applyGlobalTheme(theme) {
+    console.log('Applying global theme:', theme);
+    
     // Удаляем все существующие классы тем
     document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple');
     
     // Применяем новую тему
     if (theme !== 'light') {
         document.body.classList.add(`theme-${theme}`);
+        console.log('Added class:', `theme-${theme}`);
     }
     
     globalTheme = theme;
     
     // Сохраняем настройку
     localStorage.setItem('codepen-global-theme', theme);
+    console.log('Saved theme to localStorage:', theme);
     
     // Если включена инъекция CSS темы, обновляем CSS редактор
     if (injectThemeCSS) {
@@ -133,11 +137,20 @@ function loadGlobalThemeSettings() {
     
     if (savedTheme) {
         globalTheme = savedTheme;
+        
+        // Устанавливаем значение в скрытый элемент
+        const globalThemeSelect = document.getElementById('global-theme-select');
+        if (globalThemeSelect) {
+            globalThemeSelect.value = savedTheme;
+        }
+        
         applyGlobalTheme(savedTheme);
     }
     
-    if (savedInjectCSS) {
+    if (savedInjectCSS !== undefined) {
         injectThemeCSS = savedInjectCSS;
+        
+        // Устанавливаем значение в скрытый элемент
         const injectCheckbox = document.getElementById('inject-theme-css');
         if (injectCheckbox) {
             injectCheckbox.checked = savedInjectCSS;
@@ -368,8 +381,10 @@ function openSettingsModal() {
         librarySelect ? librarySelect.value : '';
     document.getElementById('modal-ignore-alerts').checked = 
         ignoreAlertsCheckbox ? ignoreAlertsCheckbox.checked : false;
-    document.getElementById('modal-global-theme-select').value = globalTheme;
-    document.getElementById('modal-inject-theme-css').checked = injectThemeCSS;
+    document.getElementById('modal-global-theme-select').value = 
+        globalThemeSelect ? globalThemeSelect.value : globalTheme;
+    document.getElementById('modal-inject-theme-css').checked = 
+        injectThemeCSSCheckbox ? injectThemeCSSCheckbox.checked : injectThemeCSS;
     
     // Обновляем список проектов в модальном окне
     updateModalProjectSelect();
@@ -719,11 +734,24 @@ function initializeEventListeners() {
 
     document.getElementById('modal-global-theme-select').addEventListener('change', (e) => {
         const theme = e.target.value;
+        
+        // Синхронизируем со скрытым элементом
+        const globalThemeSelect = document.getElementById('global-theme-select');
+        if (globalThemeSelect) {
+            globalThemeSelect.value = theme;
+        }
+        
         applyGlobalTheme(theme);
         showToast(`Глобальная тема изменена на ${theme}`, 'success');
     });
 
     document.getElementById('modal-inject-theme-css').addEventListener('change', (e) => {
+        // Синхронизируем со скрытым элементом
+        const injectThemeCSSCheckbox = document.getElementById('inject-theme-css');
+        if (injectThemeCSSCheckbox) {
+            injectThemeCSSCheckbox.checked = e.target.checked;
+        }
+        
         toggleThemeInjection(e.target.checked);
     });
 
