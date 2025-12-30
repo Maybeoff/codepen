@@ -1046,10 +1046,14 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePreview();
     
     // Регистрация Service Worker для PWA
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-            .then(() => console.log('Service Worker зарегистрирован'))
-            .catch((error) => console.log('Ошибка регистрации SW:', error));
+    if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+        navigator.serviceWorker.register('./sw.js')
+            .then((registration) => {
+                console.log('Service Worker зарегистрирован:', registration.scope);
+            })
+            .catch((error) => {
+                console.log('Ошибка регистрации SW:', error);
+            });
     }
     
     showToast('CodePen Pro готов к работе! 🚀', 'success');

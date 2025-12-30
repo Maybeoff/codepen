@@ -1,13 +1,13 @@
 const CACHE_NAME = 'codepen-pro-v1';
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/script.js',
-    '/themes/dark.css',
-    '/themes/blue.css',
-    '/themes/purple.css',
-    '/manifest.json',
+    './',
+    './index.html',
+    './styles.css',
+    './script.js',
+    './themes/dark.css',
+    './themes/blue.css',
+    './themes/purple.css',
+    './manifest.json',
     'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js',
@@ -76,7 +76,7 @@ self.addEventListener('fetch', (event) => {
             })
             .catch(() => {
                 // Офлайн fallback
-                return caches.match('/index.html');
+                return caches.match('./index.html');
             })
     );
 });
