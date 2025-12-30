@@ -681,232 +681,280 @@ button:focus {
 }
 /* Global Theme Styles */
 body.theme-dark {
-    background-color: #1a1a1a;
-    color: #e0e0e0;
+    background-color: #1a1a1a !important;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark header {
-    background-color: #2d2d2d;
-    border-bottom-color: #444;
+    background-color: #2d2d2d !important;
+    border-bottom-color: #444 !important;
 }
 
 body.theme-dark header h1 {
-    color: #e0e0e0;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark button, 
 body.theme-dark select {
-    background: #3a3a3a;
-    color: #e0e0e0;
-    border-color: #555;
+    background: #3a3a3a !important;
+    color: #e0e0e0 !important;
+    border-color: #555 !important;
 }
 
 body.theme-dark button:hover, 
 body.theme-dark select:hover {
-    background: #4a4a4a;
+    background: #4a4a4a !important;
 }
 
 body.theme-dark .tabs {
-    background-color: #2d2d2d;
-    border-bottom-color: #444;
+    background-color: #2d2d2d !important;
+    border-bottom-color: #444 !important;
 }
 
 body.theme-dark .tab {
-    color: #e0e0e0;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark .tab:hover {
-    background-color: #3a3a3a;
+    background-color: #3a3a3a !important;
 }
 
 body.theme-dark .tab.active {
-    background-color: #4a4a4a;
-    border-bottom-color: #667eea;
+    background-color: #4a4a4a !important;
+    border-bottom-color: #667eea !important;
 }
 
 body.theme-dark .status-bar {
-    background: #2a2a2a;
-    border-left-color: #444;
-    color: #aaa;
+    background: #2a2a2a !important;
+    border-left-color: #444 !important;
+    color: #aaa !important;
 }
 
 body.theme-dark .preview-header {
-    background: #2d2d2d;
-    border-bottom-color: #444;
-    color: #e0e0e0;
+    background: #2d2d2d !important;
+    border-bottom-color: #444 !important;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark .preview-header button {
-    background: #3a3a3a;
-    color: #e0e0e0;
-    border-color: #555;
+    background: #3a3a3a !important;
+    color: #e0e0e0 !important;
+    border-color: #555 !important;
 }
 
 body.theme-dark .preview-header button:hover {
-    background: #4a4a4a;
+    background: #4a4a4a !important;
 }
 
 body.theme-dark .resizer {
-    background: #444;
+    background: #444 !important;
 }
 
 body.theme-dark .resizer:hover {
-    background: #555;
+    background: #555 !important;
 }
 
 body.theme-dark .modal-content {
-    background-color: #2d2d2d;
-    color: #e0e0e0;
+    background-color: #2d2d2d !important;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark .modal-header {
-    background: #3a3a3a;
-    border-bottom-color: #555;
+    background: #3a3a3a !important;
+    border-bottom-color: #555 !important;
 }
 
 body.theme-dark .modal-header h2 {
-    color: #e0e0e0;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark .close-btn {
-    color: #aaa;
+    color: #aaa !important;
 }
 
 body.theme-dark .close-btn:hover {
-    background: #4a4a4a;
-    color: #e0e0e0;
+    background: #4a4a4a !important;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark .settings-section {
-    border-bottom-color: #444;
+    border-bottom-color: #444 !important;
 }
 
 body.theme-dark .settings-section h3 {
-    color: #e0e0e0;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark .setting-item label {
-    color: #e0e0e0;
+    color: #e0e0e0 !important;
 }
 
 body.theme-dark .setting-item select {
-    background: #3a3a3a;
-    color: #e0e0e0;
-    border-color: #555;
+    background: #3a3a3a !important;
+    color: #e0e0e0 !important;
+    border-color: #555 !important;
 }
 
 /* Blue Theme */
 body.theme-blue {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
 }
 
 body.theme-blue header {
-    background: rgba(102, 126, 234, 0.9);
+    background: rgba(102, 126, 234, 0.9) !important;
     backdrop-filter: blur(10px);
-    border-bottom-color: rgba(255, 255, 255, 0.2);
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 body.theme-blue header h1 {
-    color: white;
+    color: white !important;
 }
 
 body.theme-blue button, 
 body.theme-blue select {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
     backdrop-filter: blur(5px);
 }
 
 body.theme-blue button:hover, 
 body.theme-blue select:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.2) !important;
 }
 
 body.theme-blue .tabs {
-    background: rgba(102, 126, 234, 0.8);
-    border-bottom-color: rgba(255, 255, 255, 0.2);
+    background: rgba(102, 126, 234, 0.8) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 body.theme-blue .tab {
-    color: white;
+    color: white !important;
 }
 
 body.theme-blue .tab:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
 body.theme-blue .tab.active {
-    background: rgba(255, 255, 255, 0.2);
-    border-bottom-color: white;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-bottom-color: white !important;
 }
 
 body.theme-blue .modal-content {
-    background: rgba(102, 126, 234, 0.95);
+    background: rgba(102, 126, 234, 0.95) !important;
     backdrop-filter: blur(20px);
-    color: white;
+    color: white !important;
 }
 
 body.theme-blue .modal-header {
-    background: rgba(255, 255, 255, 0.1);
-    border-bottom-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.theme-blue .preview-header {
+    background: rgba(102, 126, 234, 0.8) !important;
+    color: white !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.theme-blue .preview-header button {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.theme-blue .preview-header button:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.theme-blue .resizer {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.theme-blue .resizer:hover {
+    background: rgba(255, 255, 255, 0.5) !important;
 }
 
 /* Purple Theme */
 body.theme-purple {
-    background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%);
-    color: white;
+    background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%) !important;
+    color: white !important;
 }
 
 body.theme-purple header {
-    background: rgba(139, 92, 246, 0.9);
+    background: rgba(139, 92, 246, 0.9) !important;
     backdrop-filter: blur(10px);
-    border-bottom-color: rgba(255, 255, 255, 0.2);
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 body.theme-purple header h1 {
-    color: white;
+    color: white !important;
 }
 
 body.theme-purple button, 
 body.theme-purple select {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
     backdrop-filter: blur(5px);
 }
 
 body.theme-purple button:hover, 
 body.theme-purple select:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.2) !important;
 }
 
 body.theme-purple .tabs {
-    background: rgba(139, 92, 246, 0.8);
-    border-bottom-color: rgba(255, 255, 255, 0.2);
+    background: rgba(139, 92, 246, 0.8) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 body.theme-purple .tab {
-    color: white;
+    color: white !important;
 }
 
 body.theme-purple .tab:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
 body.theme-purple .tab.active {
-    background: rgba(255, 255, 255, 0.2);
-    border-bottom-color: white;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-bottom-color: white !important;
 }
 
 body.theme-purple .modal-content {
-    background: rgba(139, 92, 246, 0.95);
+    background: rgba(139, 92, 246, 0.95) !important;
     backdrop-filter: blur(20px);
-    color: white;
+    color: white !important;
 }
 
 body.theme-purple .modal-header {
-    background: rgba(255, 255, 255, 0.1);
-    border-bottom-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.theme-purple .preview-header {
+    background: rgba(139, 92, 246, 0.8) !important;
+    color: white !important;
+    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.theme-purple .preview-header button {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.theme-purple .preview-header button:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+body.theme-purple .resizer {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.theme-purple .resizer:hover {
+    background: rgba(255, 255, 255, 0.5) !important;
 }

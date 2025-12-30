@@ -75,22 +75,18 @@ function showToast(message, type = 'info') {
 }
 
 function applyGlobalTheme(theme) {
-    console.log('Applying global theme:', theme);
-    
     // Удаляем все существующие классы тем
     document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple');
     
     // Применяем новую тему
     if (theme !== 'light') {
         document.body.classList.add(`theme-${theme}`);
-        console.log('Added class:', `theme-${theme}`);
     }
     
     globalTheme = theme;
     
     // Сохраняем настройку
     localStorage.setItem('codepen-global-theme', theme);
-    console.log('Saved theme to localStorage:', theme);
     
     // Если включена инъекция CSS темы, обновляем CSS редактор
     if (injectThemeCSS) {
