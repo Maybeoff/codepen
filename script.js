@@ -224,6 +224,43 @@ function initializeProjects() {
     document.getElementById('delete-project-btn').addEventListener('click', deleteProject);
 }
 
+function openSettingsModal() {
+    const modal = document.getElementById('settings-modal');
+    
+    // Синхронизируем значения с основными элементами
+    document.getElementById('modal-theme-select').value = 
+        document.getElementById('theme-select')?.value || 'default';
+    document.getElementById('modal-library-select').value = 
+        document.getElementById('library-select')?.value || '';
+    document.getElementById('modal-ignore-alerts').checked = 
+        document.getElementById('ignore-alerts')?.checked || false;
+    
+    // Обновляем список проектов в модальном окне
+    updateModalProjectSelect();
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSettingsModal() {
+    const modal = document.getElementById('settings-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function updateModalProjectSelect() {
+    const select = document.getElementById('modal-project-select');
+    select.innerHTML = '';
+    
+    Object.keys(projects).forEach(key => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = projects[key].name;
+        if (key === currentProject) option.selected = true;
+        select.appendChild(option);
+    });
+}
+
 function loadProjects() {
     const saved = localStorage.getItem('codepen-projects');
     const savedCurrent = localStorage.getItem('codepen-current-project');
@@ -282,6 +319,8 @@ function switchProject(projectKey) {
     document.getElementById('library-select').value = project.library || '';
     
     updatePreview();
+    updateProjectSelect();
+    updateModalProjectSelect();
     showToast(`Переключено на "${project.name}"`, 'success');
 }
 
@@ -314,6 +353,7 @@ function createNewProject() {
     currentProject = key;
     saveProjects();
     updateProjectSelect();
+    updateModalProjectSelect();
     
     // Загружаем новый проект в редакторы
     editors.html.setValue(projects[key].html);
@@ -350,6 +390,7 @@ function deleteProject() {
     document.getElementById('library-select').value = project.library || '';
     
     updateProjectSelect();
+    updateModalProjectSelect();
     updatePreview();
     
     showToast(`Проект "${projectName}" удалён`, 'success');
@@ -504,15 +545,47 @@ function initializeResizer() {
 function initializeEventListeners() {
     document.getElementById('run-btn').addEventListener('click', updatePreview);
     document.getElementById('format-btn').addEventListener('click', formatCode);
-    document.getElementById('save-btn').addEventListener('click', () => {
+    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+    document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
+
+    // Settings modal events
+    document.getElementById('close-settings').addEventListener('click', closeSettingsModal);
+    document.getElementById('settings-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'settings-modal') closeSettingsModal();
+    });
+
+    // Settings controls
+    document.getElementById('modal-theme-select').addEventListener('change', (e) => {
+        const theme = e.target.value;
+        Object.values(editors).forEach(editor => {
+            editor.setOption('theme', theme);
+        });
+        showToast(`Тема изменена на ${theme}`, 'info');
+    });
+
+    document.getElementById('modal-library-select').addEventListener('change', (e) => {
+        document.getElementById('library-select').value = e.target.value;
+        updatePreview();
+    });
+
+    document.getElementById('modal-ignore-alerts').addEventListener('change', (e) => {
+        document.getElementById('ignore-alerts').checked = e.target.checked;
+        updatePreview();
+    });
+
+    document.getElementById('modal-project-select').addEventListener('change', (e) => {
+        switchProject(e.target.value);
+    });
+
+    document.getElementById('modal-new-project-btn').addEventListener('click', createNewProject);
+    document.getElementById('modal-delete-project-btn').addEventListener('click', deleteProject);
+    document.getElementById('modal-save-btn').addEventListener('click', () => {
         saveCurrentProject();
         showToast('Проект сохранён!', 'success');
     });
-    document.getElementById('export-btn').addEventListener('click', exportToZip);
-    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
-    document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
-
-    document.getElementById('share-btn').addEventListener('click', () => {
+    document.getElementById('modal-export-btn').addEventListener('click', exportToZip);
+    document.getElementById('modal-share-btn').addEventListener('click', () => {
         saveCurrentProject();
         const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
             h: editors.html.getValue(),
@@ -526,18 +599,7 @@ function initializeEventListeners() {
             .then(() => showToast('Ссылка скопирована!', 'success'))
             .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
     });
-    
-    document.getElementById('theme-select').addEventListener('change', (e) => {
-        const theme = e.target.value;
-        Object.values(editors).forEach(editor => {
-            editor.setOption('theme', theme);
-        });
-        showToast(`Тема изменена на ${theme}`, 'info');
-    });
-    
-    document.getElementById('library-select').addEventListener('change', updatePreview);
-    document.getElementById('ignore-alerts').addEventListener('change', updatePreview);
-    
+
     document.getElementById('clear-console').addEventListener('click', () => {
         document.getElementById('console').innerHTML = '';
         showToast('Консоль очищена', 'info');
@@ -588,6 +650,10 @@ function initializeEventListeners() {
         if (e.key === 'F11') {
             e.preventDefault();
             toggleFullscreen();
+        }
+
+        if (e.key === 'Escape') {
+            closeSettingsModal();
         }
     });
 }

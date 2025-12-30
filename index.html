@@ -18,32 +18,8 @@
         <div class="controls">
             <button id="run-btn" title="Ctrl+Enter">▶ Run</button>
             <button id="format-btn" title="Форматировать код">🎨 Format</button>
-            <button id="save-btn" title="Ctrl+S">💾 Сохранить</button>
-            <button id="export-btn" title="Экспорт в ZIP">📦 Export</button>
-            <button id="share-btn">🔗 Поделится</button>
             <button id="fullscreen-btn" title="Полный экран превью">⛶ Fullscreen</button>
-            <input type="checkbox" id="ignore-alerts"> Игнорировать alert
-            <select id="theme-select" title="Тема редактора">
-                <option value="default">Light</option>
-                <option value="dracula">Dracula</option>
-                <option value="monokai">Monokai</option>
-                <option value="material">Material</option>
-                <option value="solarized">Solarized</option>
-            </select>
-            <select id="library-select" title="Подключить библиотеку">
-                <option value="">No Library</option>
-                <option value="https://code.jquery.com/jquery-3.6.0.min.js">jQuery</option>
-                <option value="https://unpkg.com/react@18/umd/react.development.js">React</option>
-                <option value="https://unpkg.com/vue@3/dist/vue.global.js">Vue 3</option>
-                <option value="https://cdn.tailwindcss.com">Tailwind CSS</option>
-                <option value="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">Bootstrap CSS</option>
-                <option value="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">Three.js</option>
-            </select>
-            <select id="project-select" title="Выбрать проект">
-                <option value="default">Проект 1</option>
-            </select>
-            <button id="new-project-btn" title="Новый проект">+ Новый</button>
-            <button id="delete-project-btn" title="Удалить проект">🗑 Удалить</button>
+            <button id="settings-btn" title="Настройки">⚙️ Настройки</button>
         </div>
     </header>
         <main>
@@ -103,6 +79,100 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-postcss.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-babel.min.js"></script>
     <script src="script.js"></script>
+    
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Настройки</h2>
+                <button id="close-settings" class="close-btn">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>🎨 Внешний вид</h3>
+                    <div class="setting-item">
+                        <label for="modal-theme-select">Тема редактора:</label>
+                        <select id="modal-theme-select">
+                            <option value="default">Light</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="material">Material</option>
+                            <option value="solarized">Solarized</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="modal-ignore-alerts"> 
+                            Игнорировать alert/confirm/prompt
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>📚 Библиотеки</h3>
+                    <div class="setting-item">
+                        <label for="modal-library-select">Подключить библиотеку:</label>
+                        <select id="modal-library-select">
+                            <option value="">No Library</option>
+                            <option value="https://code.jquery.com/jquery-3.6.0.min.js">jQuery</option>
+                            <option value="https://unpkg.com/react@18/umd/react.development.js">React</option>
+                            <option value="https://unpkg.com/vue@3/dist/vue.global.js">Vue 3</option>
+                            <option value="https://cdn.tailwindcss.com">Tailwind CSS</option>
+                            <option value="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">Bootstrap CSS</option>
+                            <option value="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">Three.js</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>📁 Проекты</h3>
+                    <div class="setting-item">
+                        <label for="modal-project-select">Текущий проект:</label>
+                        <select id="modal-project-select">
+                            <option value="default">Проект 1</option>
+                        </select>
+                    </div>
+                    <div class="setting-item project-buttons">
+                        <button id="modal-new-project-btn" class="settings-btn success">+ Новый проект</button>
+                        <button id="modal-delete-project-btn" class="settings-btn danger">🗑 Удалить проект</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>💾 Файлы</h3>
+                    <div class="setting-item project-buttons">
+                        <button id="modal-save-btn" class="settings-btn primary">💾 Сохранить проект</button>
+                        <button id="modal-export-btn" class="settings-btn primary">📦 Экспорт в ZIP</button>
+                        <button id="modal-share-btn" class="settings-btn primary">🔗 Поделиться</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden elements for compatibility -->
+    <div style="display: none;">
+        <select id="theme-select">
+            <option value="default">Light</option>
+            <option value="dracula">Dracula</option>
+            <option value="monokai">Monokai</option>
+            <option value="material">Material</option>
+            <option value="solarized">Solarized</option>
+        </select>
+        <select id="library-select">
+            <option value="">No Library</option>
+            <option value="https://code.jquery.com/jquery-3.6.0.min.js">jQuery</option>
+            <option value="https://unpkg.com/react@18/umd/react.development.js">React</option>
+            <option value="https://unpkg.com/vue@3/dist/vue.global.js">Vue 3</option>
+            <option value="https://cdn.tailwindcss.com">Tailwind CSS</option>
+            <option value="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">Bootstrap CSS</option>
+            <option value="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">Three.js</option>
+        </select>
+        <select id="project-select">
+            <option value="default">Проект 1</option>
+        </select>
+        <input type="checkbox" id="ignore-alerts">
+    </div>
     
     <!-- Toast notifications container -->
     <div id="toast-container"></div>
