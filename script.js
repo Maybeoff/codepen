@@ -155,6 +155,8 @@ function loadGlobalThemeSettings() {
     const savedTheme = localStorage.getItem('codepen-global-theme') || 'light';
     const savedInjectCSS = localStorage.getItem('codepen-inject-theme-css') === 'true';
     const savedEditorTheme = localStorage.getItem('codepen-editor-theme') || 'default';
+    const savedLibrary = localStorage.getItem('codepen-library') || '';
+    const savedIgnoreAlerts = localStorage.getItem('codepen-ignore-alerts') === 'true';
     
     globalTheme = savedTheme;
     injectThemeCSS = savedInjectCSS;
@@ -194,6 +196,26 @@ function loadGlobalThemeSettings() {
         const modalThemeSelect = document.getElementById('modal-theme-select');
         if (modalThemeSelect) {
             modalThemeSelect.value = savedEditorTheme;
+        }
+        
+        const librarySelect = document.getElementById('library-select');
+        if (librarySelect) {
+            librarySelect.value = savedLibrary;
+        }
+        
+        const modalLibrarySelect = document.getElementById('modal-library-select');
+        if (modalLibrarySelect) {
+            modalLibrarySelect.value = savedLibrary;
+        }
+        
+        const ignoreAlertsCheckbox = document.getElementById('ignore-alerts');
+        if (ignoreAlertsCheckbox) {
+            ignoreAlertsCheckbox.checked = savedIgnoreAlerts;
+        }
+        
+        const modalIgnoreAlertsCheckbox = document.getElementById('modal-ignore-alerts');
+        if (modalIgnoreAlertsCheckbox) {
+            modalIgnoreAlertsCheckbox.checked = savedIgnoreAlerts;
         }
         
         const injectCheckbox = document.getElementById('inject-theme-css');
@@ -539,9 +561,18 @@ function switchProject(projectKey) {
     editors.css.setValue(project.css);
     editors.js.setValue(project.js);
     
+    // Сохраняем библиотеку в localStorage и синхронизируем с элементами
+    const libraryValue = project.library || '';
+    localStorage.setItem('codepen-library', libraryValue);
+    
     const librarySelect = document.getElementById('library-select');
     if (librarySelect) {
-        librarySelect.value = project.library || '';
+        librarySelect.value = libraryValue;
+    }
+    
+    const modalLibrarySelect = document.getElementById('modal-library-select');
+    if (modalLibrarySelect) {
+        modalLibrarySelect.value = libraryValue;
     }
     
     updatePreview();
@@ -554,8 +585,7 @@ function saveCurrentProject() {
     if (!projects[currentProject]) return;
     if (!editors || !editors.html || !editors.css || !editors.js) return;
     
-    const librarySelect = document.getElementById('library-select');
-    const libraryValue = librarySelect ? librarySelect.value : '';
+    const libraryValue = localStorage.getItem('codepen-library') || '';
     
     projects[currentProject] = {
         name: projects[currentProject].name,
@@ -927,19 +957,35 @@ function initializeEventListeners() {
     });
 
     document.getElementById('modal-library-select').addEventListener('change', (e) => {
+        const library = e.target.value;
+        
+        // Синхронизируем со скрытым элементом
         const librarySelect = document.getElementById('library-select');
         if (librarySelect) {
-            librarySelect.value = e.target.value;
+            librarySelect.value = library;
         }
+        
+        // Сохраняем выбранную библиотеку
+        localStorage.setItem('codepen-library', library);
+        
         updatePreview();
+        showToast(library ? `Библиотека подключена: ${library.split('/').pop()}` : 'Библиотека отключена', 'info');
     });
 
     document.getElementById('modal-ignore-alerts').addEventListener('change', (e) => {
+        const ignoreAlerts = e.target.checked;
+        
+        // Синхронизируем со скрытым элементом
         const ignoreAlertsCheckbox = document.getElementById('ignore-alerts');
         if (ignoreAlertsCheckbox) {
-            ignoreAlertsCheckbox.checked = e.target.checked;
+            ignoreAlertsCheckbox.checked = ignoreAlerts;
         }
+        
+        // Сохраняем настройку
+        localStorage.setItem('codepen-ignore-alerts', ignoreAlerts);
+        
         updatePreview();
+        showToast(ignoreAlerts ? 'Alert/Confirm/Prompt будут игнорироваться' : 'Alert/Confirm/Prompt включены', 'info');
     });
 
     document.getElementById('modal-project-select').addEventListener('change', (e) => {
