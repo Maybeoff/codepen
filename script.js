@@ -109,8 +109,12 @@ function updatePreview() {
     const html = editors.html.getValue();
     const css = editors.css.getValue();
     const js = editors.js.getValue();
-    const library = document.getElementById('library-select').value;
-    const shouldIgnoreAlerts = document.getElementById('ignore-alerts').checked;
+    
+    const librarySelect = document.getElementById('library-select');
+    const library = librarySelect ? librarySelect.value : '';
+    
+    const ignoreAlertsCheckbox = document.getElementById('ignore-alerts');
+    const shouldIgnoreAlerts = ignoreAlertsCheckbox ? ignoreAlertsCheckbox.checked : false;
 
     document.getElementById('console').innerHTML = '';
 
@@ -213,27 +217,27 @@ function initializeProjects() {
         editors.html.setValue(project.html);
         editors.css.setValue(project.css);
         editors.js.setValue(project.js);
-        document.getElementById('library-select').value = project.library || '';
+        const librarySelect = document.getElementById('library-select');
+        if (librarySelect) {
+            librarySelect.value = project.library || '';
+        }
     }
-    
-    document.getElementById('project-select').addEventListener('change', (e) => {
-        switchProject(e.target.value);
-    });
-    
-    document.getElementById('new-project-btn').addEventListener('click', createNewProject);
-    document.getElementById('delete-project-btn').addEventListener('click', deleteProject);
 }
 
 function openSettingsModal() {
     const modal = document.getElementById('settings-modal');
     
     // Синхронизируем значения с основными элементами
+    const themeSelect = document.getElementById('theme-select');
+    const librarySelect = document.getElementById('library-select');
+    const ignoreAlertsCheckbox = document.getElementById('ignore-alerts');
+    
     document.getElementById('modal-theme-select').value = 
-        document.getElementById('theme-select')?.value || 'default';
+        themeSelect ? themeSelect.value : 'default';
     document.getElementById('modal-library-select').value = 
-        document.getElementById('library-select')?.value || '';
+        librarySelect ? librarySelect.value : '';
     document.getElementById('modal-ignore-alerts').checked = 
-        document.getElementById('ignore-alerts')?.checked || false;
+        ignoreAlertsCheckbox ? ignoreAlertsCheckbox.checked : false;
     
     // Обновляем список проектов в модальном окне
     updateModalProjectSelect();
@@ -295,15 +299,17 @@ function saveProjects() {
 
 function updateProjectSelect() {
     const select = document.getElementById('project-select');
-    select.innerHTML = '';
-    
-    Object.keys(projects).forEach(key => {
-        const option = document.createElement('option');
-        option.value = key;
-        option.textContent = projects[key].name;
-        if (key === currentProject) option.selected = true;
-        select.appendChild(option);
-    });
+    if (select) {
+        select.innerHTML = '';
+        
+        Object.keys(projects).forEach(key => {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = projects[key].name;
+            if (key === currentProject) option.selected = true;
+            select.appendChild(option);
+        });
+    }
 }
 
 function switchProject(projectKey) {
@@ -316,7 +322,11 @@ function switchProject(projectKey) {
     editors.html.setValue(project.html);
     editors.css.setValue(project.css);
     editors.js.setValue(project.js);
-    document.getElementById('library-select').value = project.library || '';
+    
+    const librarySelect = document.getElementById('library-select');
+    if (librarySelect) {
+        librarySelect.value = project.library || '';
+    }
     
     updatePreview();
     updateProjectSelect();
@@ -327,12 +337,15 @@ function switchProject(projectKey) {
 function saveCurrentProject() {
     if (!projects[currentProject]) return;
     
+    const librarySelect = document.getElementById('library-select');
+    const libraryValue = librarySelect ? librarySelect.value : '';
+    
     projects[currentProject] = {
         name: projects[currentProject].name,
         html: editors.html.getValue(),
         css: editors.css.getValue(),
         js: editors.js.getValue(),
-        library: document.getElementById('library-select').value
+        library: libraryValue
     };
     saveProjects();
 }
@@ -359,7 +372,11 @@ function createNewProject() {
     editors.html.setValue(projects[key].html);
     editors.css.setValue(projects[key].css);
     editors.js.setValue(projects[key].js);
-    document.getElementById('library-select').value = '';
+    
+    const librarySelect = document.getElementById('library-select');
+    if (librarySelect) {
+        librarySelect.value = '';
+    }
     
     updatePreview();
     showToast(`Проект "${name}" создан`, 'success');
@@ -387,7 +404,11 @@ function deleteProject() {
     editors.html.setValue(project.html);
     editors.css.setValue(project.css);
     editors.js.setValue(project.js);
-    document.getElementById('library-select').value = project.library || '';
+    
+    const librarySelect = document.getElementById('library-select');
+    if (librarySelect) {
+        librarySelect.value = project.library || '';
+    }
     
     updateProjectSelect();
     updateModalProjectSelect();
@@ -565,12 +586,18 @@ function initializeEventListeners() {
     });
 
     document.getElementById('modal-library-select').addEventListener('change', (e) => {
-        document.getElementById('library-select').value = e.target.value;
+        const librarySelect = document.getElementById('library-select');
+        if (librarySelect) {
+            librarySelect.value = e.target.value;
+        }
         updatePreview();
     });
 
     document.getElementById('modal-ignore-alerts').addEventListener('change', (e) => {
-        document.getElementById('ignore-alerts').checked = e.target.checked;
+        const ignoreAlertsCheckbox = document.getElementById('ignore-alerts');
+        if (ignoreAlertsCheckbox) {
+            ignoreAlertsCheckbox.checked = e.target.checked;
+        }
         updatePreview();
     });
 
@@ -587,11 +614,14 @@ function initializeEventListeners() {
     document.getElementById('modal-export-btn').addEventListener('click', exportToZip);
     document.getElementById('modal-share-btn').addEventListener('click', () => {
         saveCurrentProject();
+        const librarySelect = document.getElementById('library-select');
+        const libraryValue = librarySelect ? librarySelect.value : '';
+        
         const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
             h: editors.html.getValue(),
             c: editors.css.getValue(),
             j: editors.js.getValue(),
-            l: document.getElementById('library-select').value
+            l: libraryValue
         }));
         
         const url = `${window.location.origin}${window.location.pathname}?data=${compressed}`;
@@ -671,7 +701,10 @@ function loadFromURL() {
             if (project.c !== undefined) editors.css.setValue(project.c);
             if (project.j !== undefined) editors.js.setValue(project.j);
             if (project.l !== undefined) {
-                document.getElementById('library-select').value = project.l;
+                const librarySelect = document.getElementById('library-select');
+                if (librarySelect) {
+                    librarySelect.value = project.l;
+                }
             }
             
             showToast('Проект загружен из ссылки!', 'success');
