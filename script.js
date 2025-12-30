@@ -36,7 +36,7 @@ function initializeEditors() {
         extraKeys: {
             "Ctrl-Space": "autocomplete",
             "Ctrl-/": "toggleComment",
-            "Ctrl-S": function() { saveProject(); return false; },
+            "Ctrl-S": function() { saveCurrentProject(); return false; },
             "Ctrl-Enter": function() { updatePreview(); return false; },
             "F11": function() { toggleFullscreen(); return false; }
         },
@@ -207,6 +207,15 @@ function initializeProjects() {
     loadProjects();
     updateProjectSelect();
     
+    // Загружаем сохранённый проект в редакторы
+    const project = projects[currentProject];
+    if (project) {
+        editors.html.setValue(project.html);
+        editors.css.setValue(project.css);
+        editors.js.setValue(project.js);
+        document.getElementById('library-select').value = project.library || '';
+    }
+    
     document.getElementById('project-select').addEventListener('change', (e) => {
         switchProject(e.target.value);
     });
@@ -217,8 +226,18 @@ function initializeProjects() {
 
 function loadProjects() {
     const saved = localStorage.getItem('codepen-projects');
+    const savedCurrent = localStorage.getItem('codepen-current-project');
+    
     if (saved) {
         projects = JSON.parse(saved);
+        const keys = Object.keys(projects);
+        
+        // Восстанавливаем текущий проект или берём первый доступный
+        if (savedCurrent && projects[savedCurrent]) {
+            currentProject = savedCurrent;
+        } else if (keys.length > 0) {
+            currentProject = keys[0];
+        }
     } else {
         projects = {
             default: {
@@ -234,6 +253,7 @@ function loadProjects() {
 
 function saveProjects() {
     localStorage.setItem('codepen-projects', JSON.stringify(projects));
+    localStorage.setItem('codepen-current-project', currentProject);
 }
 
 function updateProjectSelect() {
@@ -250,6 +270,8 @@ function updateProjectSelect() {
 }
 
 function switchProject(projectKey) {
+    if (!projects[projectKey]) return;
+    
     saveCurrentProject();
     currentProject = projectKey;
     const project = projects[projectKey];
@@ -264,6 +286,8 @@ function switchProject(projectKey) {
 }
 
 function saveCurrentProject() {
+    if (!projects[currentProject]) return;
+    
     projects[currentProject] = {
         name: projects[currentProject].name,
         html: editors.html.getValue(),
@@ -287,9 +311,18 @@ function createNewProject() {
         library: ''
     };
     
+    currentProject = key;
     saveProjects();
     updateProjectSelect();
-    switchProject(key);
+    
+    // Загружаем новый проект в редакторы
+    editors.html.setValue(projects[key].html);
+    editors.css.setValue(projects[key].css);
+    editors.js.setValue(projects[key].js);
+    document.getElementById('library-select').value = '';
+    
+    updatePreview();
+    showToast(`Проект "${name}" создан`, 'success');
 }
 
 function deleteProject() {
@@ -309,8 +342,15 @@ function deleteProject() {
     const remainingKeys = Object.keys(projects);
     currentProject = remainingKeys[0];
     
+    // Загружаем новый проект напрямую, без вызова switchProject
+    const project = projects[currentProject];
+    editors.html.setValue(project.html);
+    editors.css.setValue(project.css);
+    editors.js.setValue(project.js);
+    document.getElementById('library-select').value = project.library || '';
+    
     updateProjectSelect();
-    switchProject(currentProject);
+    updatePreview();
     
     showToast(`Проект "${projectName}" удалён`, 'success');
 }
@@ -326,7 +366,7 @@ function formatCode() {
             case 'html':
                 formatted = prettier.format(code, {
                     parser: 'html',
-                    plugins: prettierPlugins,
+                    plugins: [prettierPlugins.html],
                     tabWidth: 2,
                     useTabs: false
                 });
@@ -334,7 +374,7 @@ function formatCode() {
             case 'css':
                 formatted = prettier.format(code, {
                     parser: 'css',
-                    plugins: prettierPlugins,
+                    plugins: [prettierPlugins.postcss],
                     tabWidth: 2,
                     useTabs: false
                 });
@@ -342,7 +382,7 @@ function formatCode() {
             case 'js':
                 formatted = prettier.format(code, {
                     parser: 'babel',
-                    plugins: prettierPlugins,
+                    plugins: [prettierPlugins.babel],
                     tabWidth: 2,
                     useTabs: false,
                     semi: true,
