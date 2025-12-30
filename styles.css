@@ -599,6 +599,57 @@ button:focus {
     background: #c82333;
 }
 
+.link-result {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.link-result.success {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.link-result.error {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.setting-item input[type="text"], 
+.setting-item input[type="password"],
+.setting-item textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    font-family: 'Courier New', monospace;
+}
+
+.setting-item input[type="text"]:focus, 
+.setting-item input[type="password"]:focus,
+.setting-item textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.setting-item textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

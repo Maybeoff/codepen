@@ -925,6 +925,7 @@ function initializeEventListeners() {
     document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
     document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('snow-btn').addEventListener('click', toggleSnowfall);
+    document.getElementById('short-link-btn').addEventListener('click', openShortLinkModal);
     document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
 
     // Settings modal events
@@ -932,6 +933,13 @@ function initializeEventListeners() {
     document.getElementById('settings-modal').addEventListener('click', (e) => {
         if (e.target.id === 'settings-modal') closeSettingsModal();
     });
+
+    // Short link modal events
+    document.getElementById('close-link-modal').addEventListener('click', closeShortLinkModal);
+    document.getElementById('link-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'link-modal') closeShortLinkModal();
+    });
+    document.getElementById('create-short-link').addEventListener('click', createShortLink);
 
     // Settings controls
     document.getElementById('modal-theme-select').addEventListener('change', (e) => {
@@ -1100,6 +1108,7 @@ function initializeEventListeners() {
 
         if (e.key === 'Escape') {
             closeSettingsModal();
+            closeShortLinkModal();
         }
     });
 }
@@ -1271,3 +1280,102 @@ setTimeout(() => {
         }
     }
 }, 2000);
+
+// Функции для работы с короткими ссылками
+function openShortLinkModal() {
+    const modal = document.getElementById('link-modal');
+    
+    // Заполняем информацию о текущем проекте
+    const projectName = projects[currentProject]?.name || 'Текущий проект';
+    document.getElementById('current-project-name').value = projectName;
+    
+    // Генерируем URL проекта
+    const projectUrl = generateProjectUrl();
+    document.getElementById('project-url').value = projectUrl;
+    
+    // Очищаем результат
+    document.getElementById('link-result').innerHTML = '';
+    document.getElementById('link-result').className = 'link-result';
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeShortLinkModal() {
+    const modal = document.getElementById('link-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function generateProjectUrl() {
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    
+    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
+        h: editors.html.getValue(),
+        c: editors.css.getValue(),
+        j: editors.js.getValue(),
+        l: libraryValue
+    }));
+    
+    return `${window.location.origin}${window.location.pathname}?data=${compressed}`;
+}
+
+async function createShortLink() {
+    const projectUrl = document.getElementById('project-url').value;
+    const resultDiv = document.getElementById('link-result');
+    
+    if (!projectUrl) {
+        showResult('Ошибка: URL проекта не сгенерирован', 'error');
+        return;
+    }
+    
+    try {
+        showResult('Создание короткой ссылки...', '');
+        
+        const response = await fetch('https://click.fem-boy.ru/api/code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                url: projectUrl
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const resultText = `✅ Короткая ссылка создана успешно!
+
+🔗 Короткая ссылка: https://click.fem-boy.ru/${result.code}
+📋 ID: ${result.id}
+🔑 Секретный ключ: ${result.secretKey}
+
+⚠️ ВАЖНО: Сохраните секретный ключ!
+Он потребуется для изменения ссылки в будущем.
+
+📱 Ссылка готова к использованию: https://click.fem-boy.ru/${result.code}`;
+            
+            showResult(resultText, 'success');
+            
+            // Копируем короткую ссылку в буфер обмена
+            const shortUrl = `https://click.fem-boy.ru/${result.code}`;
+            navigator.clipboard.writeText(shortUrl)
+                .then(() => showToast('Короткая ссылка скопирована в буфер обмена!', 'success'))
+                .catch(() => showToast('Короткая ссылка создана (см. модальное окно)', 'success'));
+                
+        } else {
+            showResult(`❌ Ошибка создания ссылки: ${result.error || 'Неизвестная ошибка'}`, 'error');
+        }
+        
+    } catch (error) {
+        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
+    }
+}
+
+function showResult(text, type) {
+    const resultDiv = document.getElementById('link-result');
+    resultDiv.textContent = text;
+    resultDiv.className = `link-result ${type}`;
+}
