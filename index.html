@@ -190,7 +190,7 @@
                     <div class="setting-item project-buttons">
                         <button id="modal-create-link-btn" class="settings-btn success">🔗 Создать ссылку</button>
                         <button id="modal-view-links-btn" class="settings-btn primary">📋 Мои ссылки</button>
-                        <button id="modal-edit-link-btn" class="settings-btn primary">✏️ Редактировать ссылку</button>
+                        <button id="modal-update-link-btn" class="settings-btn primary">🔄 Обновить ссылку</button>
                     </div>
                 </div>
             </div>
@@ -270,25 +270,16 @@
                     <div id="saved-links-list"></div>
                 </div>
 
-                <!-- Редактирование ссылки -->
+                <!-- Обновление ссылки -->
                 <div id="edit-link-section" class="settings-section" style="display: none;">
-                    <h3>Редактировать ссылку</h3>
+                    <h3>Обновить ссылку проекта</h3>
                     <div class="setting-item">
-                        <label>ID ссылки:</label>
-                        <input type="text" id="edit-link-id" placeholder="Введите ID ссылки">
-                    </div>
-                    <div class="setting-item">
-                        <label>Секретный ключ:</label>
-                        <input type="password" id="edit-secret-key" placeholder="Введите секретный ключ">
-                    </div>
-                    <div class="setting-item">
-                        <label>Новый URL:</label>
-                        <textarea id="edit-new-url" rows="3" placeholder="Введите новый URL"></textarea>
+                        <label>Текущая ссылка проекта:</label>
+                        <input type="text" id="current-project-link" readonly>
                     </div>
                     <div class="setting-item project-buttons">
-                        <button id="get-link-info" class="settings-btn primary">📋 Получить информацию</button>
-                        <button id="update-link-url" class="settings-btn success">✏️ Обновить ссылку</button>
-                        <button id="use-current-project" class="settings-btn primary">📝 Использовать текущий проект</button>
+                        <button id="update-project-link" class="settings-btn success">🔄 Обновить ссылку проекта</button>
+                        <button id="delete-project-link" class="settings-btn danger">🗑 Удалить ссылку</button>
                     </div>
                 </div>
 

@@ -939,9 +939,8 @@ function initializeEventListeners() {
         if (e.target.id === 'link-modal') closeShortLinkModal();
     });
     document.getElementById('create-short-link').addEventListener('click', createShortLink);
-    document.getElementById('get-link-info').addEventListener('click', getLinkInfo);
-    document.getElementById('update-link-url').addEventListener('click', updateLinkUrl);
-    document.getElementById('use-current-project').addEventListener('click', useCurrentProject);
+    document.getElementById('update-project-link').addEventListener('click', updateProjectLink);
+    document.getElementById('delete-project-link').addEventListener('click', deleteProjectLink);
 
     // Settings controls
     document.getElementById('modal-theme-select').addEventListener('change', (e) => {
@@ -1054,8 +1053,8 @@ function initializeEventListeners() {
     document.getElementById('modal-view-links-btn').addEventListener('click', () => {
         openShortLinkModal('view');
     });
-    document.getElementById('modal-edit-link-btn').addEventListener('click', () => {
-        openShortLinkModal('edit');
+    document.getElementById('modal-update-link-btn').addEventListener('click', () => {
+        openShortLinkModal('update');
     });
 
     document.getElementById('clear-console').addEventListener('click', () => {
@@ -1325,9 +1324,13 @@ function openShortLinkModal(mode = 'create') {
             displaySavedLinks();
             break;
             
-        case 'edit':
-            title.textContent = '✏️ Редактировать ссылку';
+        case 'update':
+            title.textContent = '🔄 Обновить ссылку проекта';
             document.getElementById('edit-link-section').style.display = 'block';
+            
+            // Показываем текущую ссылку проекта
+            const projectLink = getProjectLink(currentProject);
+            document.getElementById('current-project-link').value = projectLink ? projectLink.shortUrl : 'Ссылка не создана';
             break;
     }
     
@@ -1368,6 +1371,13 @@ async function createShortLink() {
         return;
     }
     
+    // Проверяем, есть ли уже ссылка для этого проекта
+    const existingLink = getProjectLink(currentProject);
+    if (existingLink) {
+        showResult(`У этого проекта уже есть ссылка: ${existingLink.shortUrl}\n\nИспользуйте "Обновить ссылку" для изменения.`, 'error');
+        return;
+    }
+    
     try {
         showResult('Создание короткой ссылки...', '');
         
@@ -1386,14 +1396,15 @@ async function createShortLink() {
         if (result.success) {
             const shortUrl = `https://click.fem-boy.ru/${result.code}`;
             
-            // Сохраняем в localStorage
-            saveShortLink({
+            // Сохраняем в localStorage с привязкой к проекту
+            saveProjectLink(currentProject, {
                 id: result.id,
                 code: result.code,
                 url: projectUrl,
                 shortUrl: shortUrl,
                 secretKey: result.secretKey,
                 projectName: projects[currentProject]?.name || 'Проект',
+                projectId: currentProject,
                 createdAt: new Date().toISOString()
             });
             
@@ -1424,6 +1435,92 @@ function saveShortLink(linkData) {
     }
     
     localStorage.setItem('codepen-short-links', JSON.stringify(savedLinks));
+}
+
+function saveProjectLink(projectId, linkData) {
+    let projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
+    projectLinks[projectId] = linkData;
+    localStorage.setItem('codepen-project-links', JSON.stringify(projectLinks));
+    
+    // Также сохраняем в общий список для совместимости
+    saveShortLink(linkData);
+}
+
+function getProjectLink(projectId) {
+    const projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
+    return projectLinks[projectId] || null;
+}
+
+function deleteProjectLink(projectId) {
+    let projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
+    delete projectLinks[projectId];
+    localStorage.setItem('codepen-project-links', JSON.stringify(projectLinks));
+}
+
+async function updateProjectLink() {
+    const projectLink = getProjectLink(currentProject);
+    
+    if (!projectLink) {
+        showResult('У этого проекта нет короткой ссылки. Создайте её сначала.', 'error');
+        return;
+    }
+    
+    const newUrl = generateProjectUrl();
+    
+    try {
+        showResult('Обновление ссылки проекта...', '');
+        
+        const response = await fetch(`https://click.fem-boy.ru/api/links/code/${projectLink.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                url: newUrl,
+                secretKey: projectLink.secretKey
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Обновляем сохраненную ссылку
+            projectLink.url = newUrl;
+            saveProjectLink(currentProject, projectLink);
+            
+            showResult(`✅ Ссылка проекта обновлена!\n\n🔗 ${projectLink.shortUrl}`, 'success');
+            
+            // Обновляем отображение текущей ссылки
+            document.getElementById('current-project-link').value = projectLink.shortUrl;
+            
+        } else {
+            showResult(`❌ Ошибка: ${result.error || 'Не удалось обновить ссылку'}`, 'error');
+        }
+        
+    } catch (error) {
+        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
+    }
+}
+
+async function deleteProjectLink() {
+    const projectLink = getProjectLink(currentProject);
+    
+    if (!projectLink) {
+        showResult('У этого проекта нет короткой ссылки.', 'error');
+        return;
+    }
+    
+    if (!confirm('Вы уверены, что хотите удалить ссылку проекта? Это действие нельзя отменить.')) {
+        return;
+    }
+    
+    // Удаляем из localStorage
+    deleteProjectLink(currentProject);
+    
+    showResult('🗑 Ссылка проекта удалена из локального хранилища.', 'success');
+    document.getElementById('current-project-link').value = 'Ссылка не создана';
+    
+    showToast('Ссылка проекта удалена', 'info');
 }
 
 function getSavedShortLinks() {
@@ -1471,7 +1568,6 @@ function displaySavedLinks() {
             <div class="link-url" onclick="copyToClipboard('${link.shortUrl}')">${link.shortUrl}</div>
             <div class="link-date">Создана: ${date}</div>
             <div class="link-actions">
-                <button class="settings-btn primary" onclick="editSavedLink('${link.id}', '${link.secretKey}')">✏️ Редактировать</button>
                 <button class="settings-btn primary" onclick="copyToClipboard('${link.shortUrl}')">📋 Копировать</button>
             </div>
         `;
@@ -1480,106 +1576,10 @@ function displaySavedLinks() {
     });
 }
 
-async function getLinkInfo() {
-    const linkId = document.getElementById('edit-link-id').value.trim();
-    
-    if (!linkId) {
-        showResult('Введите ID ссылки', 'error');
-        return;
-    }
-    
-    try {
-        showResult('Получение информации...', '');
-        
-        const response = await fetch(`https://click.fem-boy.ru/api/links/code/${linkId}`);
-        const result = await response.json();
-        
-        if (response.ok) {
-            const resultText = `📋 Информация о ссылке:
-
-🔗 Код: ${result.code}
-🌐 URL: ${result.url}
-📅 Создана: ${result.created_at}
-🔒 Защищена ключом: ${result.hasSecretKey ? 'Да' : 'Нет'}
-✏️ Можно редактировать: ${result.canEdit ? 'Да' : 'Нет'}`;
-            
-            showResult(resultText, 'success');
-        } else {
-            showResult(`❌ Ошибка: ${result.error || 'Ссылка не найдена'}`, 'error');
-        }
-        
-    } catch (error) {
-        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
-    }
-}
-
-async function updateLinkUrl() {
-    const linkId = document.getElementById('edit-link-id').value.trim();
-    const secretKey = document.getElementById('edit-secret-key').value.trim();
-    const newUrl = document.getElementById('edit-new-url').value.trim();
-    
-    if (!linkId || !secretKey || !newUrl) {
-        showResult('Заполните все поля', 'error');
-        return;
-    }
-    
-    try {
-        showResult('Обновление ссылки...', '');
-        
-        const response = await fetch(`https://click.fem-boy.ru/api/links/code/${linkId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                url: newUrl,
-                secretKey: secretKey
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showResult(`✅ Ссылка обновлена успешно!\n\n🔗 ${result.code}\n🌐 Новый URL: ${result.url}`, 'success');
-            
-            // Обновляем в localStorage если есть
-            updateSavedLink(linkId, newUrl);
-            
-        } else {
-            showResult(`❌ Ошибка: ${result.error || 'Не удалось обновить ссылку'}`, 'error');
-        }
-        
-    } catch (error) {
-        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
-    }
-}
-
-function useCurrentProject() {
-    const projectUrl = generateProjectUrl();
-    document.getElementById('edit-new-url').value = projectUrl;
-    showToast('URL текущего проекта добавлен', 'info');
-}
-
-function editSavedLink(linkId, secretKey) {
-    document.getElementById('edit-link-id').value = linkId;
-    document.getElementById('edit-secret-key').value = secretKey;
-    openShortLinkModal('edit');
-}
-
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text)
         .then(() => showToast('Скопировано в буфер обмена!', 'success'))
         .catch(() => showToast('Не удалось скопировать', 'error'));
-}
-
-function updateSavedLink(linkId, newUrl) {
-    let savedLinks = getSavedShortLinks();
-    const linkIndex = savedLinks.findIndex(link => link.id === linkId);
-    
-    if (linkIndex !== -1) {
-        savedLinks[linkIndex].url = newUrl;
-        localStorage.setItem('codepen-short-links', JSON.stringify(savedLinks));
-    }
 }
 
 function showResult(text, type) {
