@@ -78,9 +78,22 @@ function applyGlobalTheme(theme) {
     // Удаляем все существующие классы тем
     document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple');
     
+    // Удаляем старый CSS файл темы
+    const oldThemeLink = document.getElementById('theme-stylesheet');
+    if (oldThemeLink) {
+        oldThemeLink.remove();
+    }
+    
     // Применяем новую тему
-    if (theme !== 'light') {
+    if (theme && theme !== 'light') {
         document.body.classList.add(`theme-${theme}`);
+        
+        // Загружаем CSS файл темы
+        const link = document.createElement('link');
+        link.id = 'theme-stylesheet';
+        link.rel = 'stylesheet';
+        link.href = `themes/${theme}.css`;
+        document.head.appendChild(link);
     }
     
     globalTheme = theme;
@@ -96,6 +109,11 @@ function applyGlobalTheme(theme) {
 
 function injectThemeCSSToEditor() {
     if (!injectThemeCSS || !themeCSSTemplates[globalTheme]) return;
+    
+    // Проверяем, что редактор CSS инициализирован
+    if (!editors || !editors.css) {
+        return;
+    }
     
     const currentCSS = editors.css.getValue();
     const themeCSS = themeCSSTemplates[globalTheme];
@@ -118,40 +136,54 @@ function toggleThemeInjection(enabled) {
         injectThemeCSSToEditor();
         showToast('CSS темы добавлен в редактор', 'success');
     } else {
-        // Удаляем код темы из CSS
-        const currentCSS = editors.css.getValue();
-        const cleanCSS = currentCSS.replace(/\/\* (Светлая|Тёмная|Синяя|Фиолетовая) тема \*\/[\s\S]*?(?=\/\*|$)/g, '').trim();
-        editors.css.setValue(cleanCSS);
-        updatePreview();
+        // Удаляем код темы из CSS только если редактор инициализирован
+        if (editors && editors.css) {
+            const currentCSS = editors.css.getValue();
+            const cleanCSS = currentCSS.replace(/\/\* (Светлая|Тёмная|Синяя|Фиолетовая) тема \*\/[\s\S]*?(?=\/\*|$)/g, '').trim();
+            editors.css.setValue(cleanCSS);
+            updatePreview();
+        }
         showToast('CSS темы удален из редактора', 'info');
     }
 }
 
 function loadGlobalThemeSettings() {
-    const savedTheme = localStorage.getItem('codepen-global-theme');
+    const savedTheme = localStorage.getItem('codepen-global-theme') || 'light';
     const savedInjectCSS = localStorage.getItem('codepen-inject-theme-css') === 'true';
     
-    if (savedTheme) {
-        globalTheme = savedTheme;
-        
-        // Устанавливаем значение в скрытый элемент
+    globalTheme = savedTheme;
+    injectThemeCSS = savedInjectCSS;
+    
+    // Применяем тему сразу
+    applyGlobalTheme(savedTheme);
+    
+    // Если включена инъекция CSS и редакторы уже инициализированы, применяем CSS тему
+    if (savedInjectCSS && editors && editors.css) {
+        injectThemeCSSToEditor();
+    }
+    
+    // Устанавливаем значения в элементы (будет работать после загрузки DOM)
+    setTimeout(() => {
         const globalThemeSelect = document.getElementById('global-theme-select');
         if (globalThemeSelect) {
             globalThemeSelect.value = savedTheme;
         }
         
-        applyGlobalTheme(savedTheme);
-    }
-    
-    if (savedInjectCSS !== undefined) {
-        injectThemeCSS = savedInjectCSS;
+        const modalGlobalThemeSelect = document.getElementById('modal-global-theme-select');
+        if (modalGlobalThemeSelect) {
+            modalGlobalThemeSelect.value = savedTheme;
+        }
         
-        // Устанавливаем значение в скрытый элемент
         const injectCheckbox = document.getElementById('inject-theme-css');
         if (injectCheckbox) {
             injectCheckbox.checked = savedInjectCSS;
         }
-    }
+        
+        const modalInjectCheckbox = document.getElementById('modal-inject-theme-css');
+        if (modalInjectCheckbox) {
+            modalInjectCheckbox.checked = savedInjectCSS;
+        }
+    }, 100);
 }
 
 function updateStatusBar() {
@@ -378,9 +410,9 @@ function openSettingsModal() {
     document.getElementById('modal-ignore-alerts').checked = 
         ignoreAlertsCheckbox ? ignoreAlertsCheckbox.checked : false;
     document.getElementById('modal-global-theme-select').value = 
-        globalThemeSelect ? globalThemeSelect.value : globalTheme;
+        globalTheme; // Используем глобальную переменную вместо элемента
     document.getElementById('modal-inject-theme-css').checked = 
-        injectThemeCSSCheckbox ? injectThemeCSSCheckbox.checked : injectThemeCSS;
+        injectThemeCSS; // Используем глобальную переменную вместо элемента
     
     // Обновляем список проектов в модальном окне
     updateModalProjectSelect();
@@ -881,10 +913,10 @@ function loadFromURL() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadGlobalThemeSettings();
     initializeEditors();
     initializeTabs();
     initializeProjects();
+    loadGlobalThemeSettings(); // Перенесли после инициализации редакторов
     initializeResizer();
     initializeEventListeners();
     loadFromURL();

@@ -6,6 +6,9 @@ body {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    background-color: #ffffff;
+    color: #333333;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 header {
@@ -17,6 +20,7 @@ header {
     border-bottom: 1px solid #ccc;
     height: 50px;
     box-sizing: border-box;
+    transition: background-color 0.3s ease;
 }
 
 header h1 {
@@ -38,6 +42,7 @@ button, select {
     background: white;
     border-radius: 3px;
     font-size: 13px;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 button:hover, select:hover {
@@ -62,6 +67,7 @@ main {
     border-right: 1px solid #ccc;
     background: white;
     min-width: 300px;
+    transition: background-color 0.3s ease;
 }
 
 .tabs {
@@ -69,6 +75,7 @@ main {
     background-color: #eee;
     border-bottom: 1px solid #ccc;
     position: relative;
+    transition: background-color 0.3s ease;
 }
 
 .tab {
@@ -100,12 +107,14 @@ main {
     color: #666;
     background: #f9f9f9;
     border-left: 1px solid #ccc;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .editors {
     flex: 1;
     position: relative;
     background: white;
+    transition: background-color 0.3s ease;
 }
 
 .editor {
@@ -185,6 +194,7 @@ main {
     cursor: col-resize;
     position: relative;
     flex-shrink: 0;
+    transition: background-color 0.3s ease;
 }
 
 .resizer:hover {
@@ -197,6 +207,7 @@ main {
     display: flex;
     flex-direction: column;
     min-width: 300px;
+    transition: background-color 0.3s ease;
 }
 
 .preview-header {
@@ -208,6 +219,7 @@ main {
     border-bottom: 1px solid #ccc;
     font-weight: bold;
     color: #333;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .preview-header button {
@@ -249,6 +261,7 @@ iframe {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     min-width: 200px;
     animation: slideIn 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .toast.success {
@@ -264,25 +277,13 @@ iframe {
 }
 
 @keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
 }
 
 .fullscreen-overlay {
@@ -330,9 +331,12 @@ iframe {
     border: none;
 }
 
-/* Дополнительные стили */
 .CodeMirror-hints {
     z-index: 1001 !important;
+}
+
+.CodeMirror-focused .CodeMirror-selected {
+    background: rgba(102, 126, 234, 0.2) !important;
 }
 
 .console::-webkit-scrollbar {
@@ -353,95 +357,6 @@ iframe {
 }
 
 button:focus {
-    outline: 2px solid #4CAF50;
-    outline-offset: 1px;
-}
-
-@media (max-width: 768px) {
-    .controls {
-        gap: 5px;
-    }
-    
-    button, select {
-        padding: 4px 8px;
-        font-size: 12px;
-    }
-    
-    main {
-        flex-direction: column;
-    }
-    
-    .editor-container, .preview-container {
-        flex: none;
-        height: 50vh;
-    }
-    
-    .resizer {
-        width: 100%;
-        height: 4px;
-        cursor: row-resize;
-    }
-    
-    .status-bar {
-        display: none;
-    }
-    
-    .toast {
-        min-width: 180px;
-        font-size: 14px;
-    }
-}
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-.CodeMirror-hints {
-    z-index: 1001 !important;
-}
-
-.CodeMirror-focused .CodeMirror-selected {
-    background: rgba(102, 126, 234, 0.2) !important;
-}
-
-.console::-webkit-scrollbar {
-    width: 8px;
-}
-
-.console::-webkit-scrollbar-track {
-    background: #2d3748;
-}
-
-.console::-webkit-scrollbar-thumb {
-    background: #4a5568;
-    border-radius: 4px;
-}
-
-.console::-webkit-scrollbar-thumb:hover {
-    background: #718096;
-}
-
-.editor {
-    transition: opacity 0.2s ease;
-}
-
-.editor:not(.active) {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.editor.active {
-    opacity: 1;
-    pointer-events: all;
-}
-
-button:focus {
     outline: 2px solid rgba(102, 126, 234, 0.5);
     outline-offset: 2px;
 }
@@ -451,27 +366,7 @@ button:focus {
     background: rgba(102, 126, 234, 0.1) !important;
 }
 
-@media (max-width: 480px) {
-    header h1 {
-        font-size: 1.2em;
-    }
-    
-    .controls {
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-    
-    button, select {
-        font-size: 11px;
-        padding: 4px 6px;
-    }
-    
-    .toast {
-        min-width: 200px;
-        font-size: 14px;
-    }
-}
-/* Settings Modal Styles */
+/* Settings Modal */
 .modal {
     display: none;
     position: fixed;
@@ -499,6 +394,7 @@ button:focus {
     max-height: 80vh;
     overflow-y: auto;
     animation: slideInModal 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .modal-header {
@@ -509,6 +405,7 @@ button:focus {
     border-bottom: 1px solid #eee;
     background: #f8f9fa;
     border-radius: 8px 8px 0 0;
+    transition: background-color 0.3s ease;
 }
 
 .modal-header h2 {
@@ -617,7 +514,6 @@ button:focus {
 
 .settings-btn.primary:hover {
     background: #5a6fd8;
-    transform: translateY(-1px);
 }
 
 .settings-btn.success {
@@ -627,7 +523,6 @@ button:focus {
 
 .settings-btn.success:hover {
     background: #218838;
-    transform: translateY(-1px);
 }
 
 .settings-btn.danger {
@@ -637,7 +532,6 @@ button:focus {
 
 .settings-btn.danger:hover {
     background: #c82333;
-    transform: translateY(-1px);
 }
 
 @keyframes fadeIn {
@@ -646,315 +540,25 @@ button:focus {
 }
 
 @keyframes slideInModal {
-    from {
-        opacity: 0;
-        transform: translateY(-50px) scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    from { opacity: 0; transform: translateY(-50px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @media (max-width: 768px) {
-    .modal-content {
-        width: 95%;
-        margin: 10px;
-    }
-    
-    .modal-header {
-        padding: 15px;
-    }
-    
-    .modal-body {
-        padding: 15px;
-    }
-    
-    .project-buttons {
-        flex-direction: column;
-    }
-    
-    .settings-btn {
-        width: 100%;
-        justify-content: center;
-    }
-}
-/* Global Theme Styles */
-body.theme-dark {
-    background-color: #1a1a1a !important;
-    color: #e0e0e0 !important;
+    .controls { gap: 5px; }
+    button, select { padding: 4px 8px; font-size: 12px; }
+    main { flex-direction: column; }
+    .editor-container, .preview-container { flex: none; height: 50vh; }
+    .resizer { width: 100%; height: 4px; cursor: row-resize; }
+    .status-bar { display: none; }
+    .modal-content { width: 95%; margin: 10px; }
+    .modal-header, .modal-body { padding: 15px; }
+    .project-buttons { flex-direction: column; }
+    .settings-btn { width: 100%; justify-content: center; }
 }
 
-body.theme-dark header {
-    background-color: #2d2d2d !important;
-    border-bottom-color: #444 !important;
-}
-
-body.theme-dark header h1 {
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark button, 
-body.theme-dark select {
-    background: #3a3a3a !important;
-    color: #e0e0e0 !important;
-    border-color: #555 !important;
-}
-
-body.theme-dark button:hover, 
-body.theme-dark select:hover {
-    background: #4a4a4a !important;
-}
-
-body.theme-dark .tabs {
-    background-color: #2d2d2d !important;
-    border-bottom-color: #444 !important;
-}
-
-body.theme-dark .tab {
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark .tab:hover {
-    background-color: #3a3a3a !important;
-}
-
-body.theme-dark .tab.active {
-    background-color: #4a4a4a !important;
-    border-bottom-color: #667eea !important;
-}
-
-body.theme-dark .status-bar {
-    background: #2a2a2a !important;
-    border-left-color: #444 !important;
-    color: #aaa !important;
-}
-
-body.theme-dark .preview-header {
-    background: #2d2d2d !important;
-    border-bottom-color: #444 !important;
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark .preview-header button {
-    background: #3a3a3a !important;
-    color: #e0e0e0 !important;
-    border-color: #555 !important;
-}
-
-body.theme-dark .preview-header button:hover {
-    background: #4a4a4a !important;
-}
-
-body.theme-dark .resizer {
-    background: #444 !important;
-}
-
-body.theme-dark .resizer:hover {
-    background: #555 !important;
-}
-
-body.theme-dark .modal-content {
-    background-color: #2d2d2d !important;
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark .modal-header {
-    background: #3a3a3a !important;
-    border-bottom-color: #555 !important;
-}
-
-body.theme-dark .modal-header h2 {
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark .close-btn {
-    color: #aaa !important;
-}
-
-body.theme-dark .close-btn:hover {
-    background: #4a4a4a !important;
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark .settings-section {
-    border-bottom-color: #444 !important;
-}
-
-body.theme-dark .settings-section h3 {
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark .setting-item label {
-    color: #e0e0e0 !important;
-}
-
-body.theme-dark .setting-item select {
-    background: #3a3a3a !important;
-    color: #e0e0e0 !important;
-    border-color: #555 !important;
-}
-
-/* Blue Theme */
-body.theme-blue {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-}
-
-body.theme-blue header {
-    background: rgba(102, 126, 234, 0.9) !important;
-    backdrop-filter: blur(10px);
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-blue header h1 {
-    color: white !important;
-}
-
-body.theme-blue button, 
-body.theme-blue select {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-    backdrop-filter: blur(5px);
-}
-
-body.theme-blue button:hover, 
-body.theme-blue select:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-blue .tabs {
-    background: rgba(102, 126, 234, 0.8) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-blue .tab {
-    color: white !important;
-}
-
-body.theme-blue .tab:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-}
-
-body.theme-blue .tab.active {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border-bottom-color: white !important;
-}
-
-body.theme-blue .modal-content {
-    background: rgba(102, 126, 234, 0.95) !important;
-    backdrop-filter: blur(20px);
-    color: white !important;
-}
-
-body.theme-blue .modal-header {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-blue .preview-header {
-    background: rgba(102, 126, 234, 0.8) !important;
-    color: white !important;
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-blue .preview-header button {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-body.theme-blue .preview-header button:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-blue .resizer {
-    background: rgba(255, 255, 255, 0.3) !important;
-}
-
-body.theme-blue .resizer:hover {
-    background: rgba(255, 255, 255, 0.5) !important;
-}
-
-/* Purple Theme */
-body.theme-purple {
-    background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C084FC 100%) !important;
-    color: white !important;
-}
-
-body.theme-purple header {
-    background: rgba(139, 92, 246, 0.9) !important;
-    backdrop-filter: blur(10px);
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-purple header h1 {
-    color: white !important;
-}
-
-body.theme-purple button, 
-body.theme-purple select {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-    backdrop-filter: blur(5px);
-}
-
-body.theme-purple button:hover, 
-body.theme-purple select:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-purple .tabs {
-    background: rgba(139, 92, 246, 0.8) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-purple .tab {
-    color: white !important;
-}
-
-body.theme-purple .tab:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-}
-
-body.theme-purple .tab.active {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border-bottom-color: white !important;
-}
-
-body.theme-purple .modal-content {
-    background: rgba(139, 92, 246, 0.95) !important;
-    backdrop-filter: blur(20px);
-    color: white !important;
-}
-
-body.theme-purple .modal-header {
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-purple .preview-header {
-    background: rgba(139, 92, 246, 0.8) !important;
-    color: white !important;
-    border-bottom-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-purple .preview-header button {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-body.theme-purple .preview-header button:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-}
-
-body.theme-purple .resizer {
-    background: rgba(255, 255, 255, 0.3) !important;
-}
-
-body.theme-purple .resizer:hover {
-    background: rgba(255, 255, 255, 0.5) !important;
+@media (max-width: 480px) {
+    header h1 { font-size: 1.2em; }
+    .controls { flex-wrap: wrap; gap: 4px; }
+    button, select { font-size: 11px; padding: 4px 6px; }
 }
