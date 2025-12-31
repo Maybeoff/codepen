@@ -124,7 +124,8 @@ body.theme-blue .qr-code-container {
     border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-body.theme-blue #qr-code-display svg {
+body.theme-blue #qr-code-display {
+    background: white !important;
     border-color: rgba(255, 255, 255, 0.3) !important;
 }
 

@@ -147,7 +147,8 @@ body.theme-dark .qr-code-container {
     border-color: #555 !important;
 }
 
-body.theme-dark #qr-code-display svg {
+body.theme-dark #qr-code-display {
+    background: white !important;
     border-color: #555 !important;
 }
 

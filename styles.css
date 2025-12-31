@@ -712,20 +712,26 @@ button:focus {
 }
 
 #qr-code-display {
-    min-height: 200px;
+    min-height: 300px;
+    min-width: 300px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 15px;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
 }
 
 #qr-code-display svg {
-    max-width: 300px;
-    max-height: 300px;
-    border: 2px solid #dee2e6;
-    border-radius: 8px;
-    background: white;
-    padding: 10px;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 280px !important;
+    max-height: 280px !important;
+    min-width: 200px !important;
+    min-height: 200px !important;
+    display: block !important;
 }
 
 #qr-loading {
@@ -765,6 +771,61 @@ button:focus {
     .preview-size-btn { display: none; }
     .preview-wrapper { padding: 0; }
     .preview-wrapper iframe { width: 100% !important; border-radius: 0; box-shadow: none; }
+    
+    /* Исправление скролла на мобильных */
+    body {
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .editor-container, .preview-container {
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .editors {
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .CodeMirror {
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+    
+    .preview-wrapper {
+        overflow: auto;
+        -webkit-overflow-scrolling: touch;
+        /* Разрешаем скролл внутри превью */
+        touch-action: auto;
+    }
+    
+    iframe {
+        overflow-scrolling: touch;
+        -webkit-overflow-scrolling: touch;
+        /* Разрешаем все touch действия в iframe */
+        touch-action: auto;
+    }
+    
+    /* Предотвращение перехвата скролла редактором */
+    .CodeMirror-scroll {
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        /* Ограничиваем touch действия только вертикальным скроллом */
+        touch-action: pan-y;
+    }
+    
+    /* Фиксация header на мобильных */
+    header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        /* Предотвращаем touch действия в header */
+        touch-action: manipulation;
+    }
 }
 
 @media (max-width: 480px) {

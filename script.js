@@ -319,6 +319,13 @@ function initializeEditors() {
         });
         
         editor.on('cursorActivity', updateStatusBar);
+        
+        // Улучшенная обработка скролла на мобильных устройствах
+        if (window.innerWidth <= 768) {
+            const scrollElement = editor.getScrollerElement();
+            // Добавляем touch-action для правильного поведения скролла
+            scrollElement.style.touchAction = 'pan-y';
+        }
     });
 
     updateStatusBar();
@@ -947,7 +954,7 @@ function initializeEventListeners() {
     document.getElementById('qr-modal').addEventListener('click', (e) => {
         if (e.target.id === 'qr-modal') closeQRModal();
     });
-    document.getElementById('generate-qr-btn').addEventListener('click', generateQRCode);
+    document.getElementById('generate-qr-btn').addEventListener('click', createShortLinkForQR);
     document.getElementById('download-qr-btn').addEventListener('click', downloadQRCode);
 
     // Settings controls
@@ -1216,6 +1223,26 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch((error) => {
                 console.log('Ошибка регистрации SW:', error);
             });
+    }
+    
+    // Исправление скролла на мобильных устройствах
+    if (window.innerWidth <= 768) {
+        // Обработка изменения ориентации
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                Object.values(editors).forEach(editor => {
+                    if (editor) editor.refresh();
+                });
+            }, 100);
+        });
+        
+        // Улучшенная обработка touch событий для предотвращения конфликтов
+        document.addEventListener('touchstart', function(e) {
+            // Разрешаем touch события в iframe и preview-wrapper
+            if (e.target.closest('iframe') || e.target.closest('.preview-wrapper')) {
+                return;
+            }
+        }, { passive: true });
     }
     
     showToast('CodePen Pro готов к работе! 🚀', 'success');
@@ -1653,11 +1680,8 @@ function openQRModal() {
     const projectName = projects[currentProject]?.name || 'Текущий проект';
     document.getElementById('qr-project-name').value = projectName;
     
-    // Генерируем URL проекта с полноэкранным режимом для QR-кода
-    const baseUrl = generateProjectUrl();
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    const fullscreenUrl = baseUrl + separator + 'fullscreen';
-    document.getElementById('qr-project-url').value = fullscreenUrl;
+    // Показываем сообщение о создании короткой ссылки
+    document.getElementById('qr-project-url').value = 'Создание короткой ссылки для QR-кода...';
     
     // Очищаем предыдущий QR-код
     document.getElementById('qr-code-display').innerHTML = '';
@@ -1666,39 +1690,85 @@ function openQRModal() {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
     
-    // Автоматически генерируем QR-код
-    generateQRCode();
+    // Автоматически создаем короткую ссылку и генерируем QR-код
+    createShortLinkForQR();
 }
 
-function updateQRUrl() {
-    // Эта функция больше не нужна, так как QR всегда генерируется с fullscreen
-}
-
-function closeQRModal() {
-    const modal = document.getElementById('qr-modal');
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-async function generateQRCode() {
-    const projectUrl = document.getElementById('qr-project-url').value;
+async function createShortLinkForQR() {
     const qrDisplay = document.getElementById('qr-code-display');
     const qrLoading = document.getElementById('qr-loading');
-    const downloadBtn = document.getElementById('download-qr-btn');
-    
-    if (!projectUrl) {
-        showToast('Ошибка: URL проекта не сгенерирован', 'error');
-        return;
-    }
+    const qrUrlField = document.getElementById('qr-project-url');
     
     try {
         // Показываем индикатор загрузки
         qrDisplay.innerHTML = '';
         qrLoading.style.display = 'flex';
-        downloadBtn.style.display = 'none';
+        qrLoading.querySelector('p').textContent = 'Создание короткой ссылки...';
         
+        // Генерируем полный URL проекта
+        const baseUrl = generateProjectUrl();
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        const fullscreenUrl = baseUrl + separator + 'fullscreen';
+        
+        // Создаем короткую ссылку через API
+        const response = await fetch('https://click.fem-boy.ru/api/code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                url: fullscreenUrl
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const shortUrl = `https://click.fem-boy.ru/${result.code}`;
+            
+            // Обновляем поле URL
+            qrUrlField.value = shortUrl;
+            
+            // Обновляем индикатор загрузки
+            qrLoading.querySelector('p').textContent = 'Генерация QR-кода...';
+            
+            // Генерируем QR-код для короткой ссылки
+            await generateQRCodeFromUrl(shortUrl);
+            
+            showToast('QR-код создан с короткой ссылкой!', 'success');
+            
+        } else {
+            throw new Error(result.error || 'Не удалось создать короткую ссылку');
+        }
+        
+    } catch (error) {
+        console.error('Ошибка создания короткой ссылки для QR:', error);
+        
+        // Скрываем индикатор загрузки
+        qrLoading.style.display = 'none';
+        
+        // Показываем ошибку
+        qrDisplay.innerHTML = `
+            <div style="text-align: center; color: #dc3545; padding: 20px;">
+                <p>❌ Ошибка создания короткой ссылки</p>
+                <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
+                <button onclick="createShortLinkForQR()" style="margin-top: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Попробовать снова</button>
+            </div>
+        `;
+        
+        qrUrlField.value = 'Ошибка создания короткой ссылки';
+        showToast('Ошибка создания короткой ссылки: ' + error.message, 'error');
+    }
+}
+
+async function generateQRCodeFromUrl(url) {
+    const qrDisplay = document.getElementById('qr-code-display');
+    const qrLoading = document.getElementById('qr-loading');
+    const downloadBtn = document.getElementById('download-qr-btn');
+    
+    try {
         // Кодируем URL для использования в API
-        const encodedUrl = encodeURIComponent(projectUrl);
+        const encodedUrl = encodeURIComponent(url);
         
         // Формируем URL для API генерации QR-кода
         const qrApiUrl = `https://public-api.qr-code-generator.com/v1/create/free?image_format=SVG&image_width=500&foreground_color=%23000000&frame_color=%23000000&frame_name=no-frame&qr_code_logo=&qr_code_pattern=&qr_code_text=${encodedUrl}`;
@@ -1716,13 +1786,29 @@ async function generateQRCode() {
         // Скрываем индикатор загрузки
         qrLoading.style.display = 'none';
         
-        // Отображаем QR-код
+        // Отображаем QR-код с дополнительной обработкой
         qrDisplay.innerHTML = svgText;
+        
+        // Дополнительная настройка SVG для правильного отображения
+        const svgElement = qrDisplay.querySelector('svg');
+        if (svgElement) {
+            // Убираем атрибуты width и height, чтобы CSS мог управлять размером
+            svgElement.removeAttribute('width');
+            svgElement.removeAttribute('height');
+            
+            // Устанавливаем viewBox если его нет
+            if (!svgElement.getAttribute('viewBox')) {
+                svgElement.setAttribute('viewBox', '0 0 500 500');
+            }
+            
+            // Принудительно устанавливаем стили
+            svgElement.style.width = '100%';
+            svgElement.style.height = '100%';
+            svgElement.style.display = 'block';
+        }
         
         // Показываем кнопку скачивания
         downloadBtn.style.display = 'inline-flex';
-        
-        showToast('QR-код успешно сгенерирован!', 'success');
         
     } catch (error) {
         console.error('Ошибка генерации QR-кода:', error);
@@ -1735,11 +1821,28 @@ async function generateQRCode() {
             <div style="text-align: center; color: #dc3545; padding: 20px;">
                 <p>❌ Ошибка генерации QR-кода</p>
                 <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
+                <button onclick="generateQRCodeFromUrl('${url}')" style="margin-top: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Попробовать снова</button>
             </div>
         `;
         
-        showToast('Ошибка генерации QR-кода: ' + error.message, 'error');
+        throw error;
     }
+}
+
+function updateQRUrl() {
+    // Эта функция больше не нужна, так как QR всегда генерируется с короткой ссылкой
+}
+
+function closeQRModal() {
+    const modal = document.getElementById('qr-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+async function generateQRCode() {
+    // Эта функция теперь используется только для обратной совместимости
+    // Основная логика перенесена в createShortLinkForQR
+    await createShortLinkForQR();
 }
 
 function downloadQRCode() {
