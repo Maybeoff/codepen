@@ -182,6 +182,8 @@
                         <button id="modal-export-btn" class="settings-btn primary">📦 Экспорт в ZIP</button>
                         <button id="modal-import-btn" class="settings-btn primary">📥 Импорт из ZIP</button>
                         <button id="modal-share-btn" class="settings-btn primary">🔗 Поделиться</button>
+                        <button id="modal-share-fullscreen-btn" class="settings-btn primary">🖥️ Поделиться (полный экран)</button>
+                        <button id="modal-qr-btn" class="settings-btn primary">📱 QR-код</button>
                     </div>
                 </div>
 
@@ -238,6 +240,38 @@
             <button id="exit-fullscreen">✕ Exit</button>
         </div>
         <iframe id="fullscreen-preview"></iframe>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div id="qr-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📱 QR-код проекта</h2>
+                <button id="close-qr-modal" class="close-btn">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label>Название проекта:</label>
+                        <input type="text" id="qr-project-name" readonly>
+                    </div>
+                    <div class="setting-item">
+                        <label>URL проекта:</label>
+                        <textarea id="qr-project-url" rows="3" readonly></textarea>
+                    </div>
+                    <div class="qr-code-container">
+                        <div id="qr-code-display"></div>
+                        <div id="qr-loading" style="display: none;">
+                            <p>Генерация QR-кода...</p>
+                        </div>
+                    </div>
+                    <div class="setting-item project-buttons">
+                        <button id="generate-qr-btn" class="settings-btn success">🔄 Обновить QR-код</button>
+                        <button id="download-qr-btn" class="settings-btn primary" style="display: none;">💾 Скачать QR-код</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Short Link Management Modal -->

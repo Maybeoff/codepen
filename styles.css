@@ -699,6 +699,48 @@ button:focus {
     margin-right: 5px;
 }
 
+/* QR Code Modal Styles */
+.qr-code-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+#qr-code-display {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+#qr-code-display svg {
+    max-width: 300px;
+    max-height: 300px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    background: white;
+    padding: 10px;
+}
+
+#qr-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: #6c757d;
+}
+
+#qr-loading p {
+    margin: 0;
+    font-style: italic;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

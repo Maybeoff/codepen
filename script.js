@@ -942,6 +942,14 @@ function initializeEventListeners() {
     document.getElementById('update-project-link').addEventListener('click', updateProjectLink);
     document.getElementById('delete-project-link').addEventListener('click', deleteProjectLink);
 
+    // QR code modal events
+    document.getElementById('close-qr-modal').addEventListener('click', closeQRModal);
+    document.getElementById('qr-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'qr-modal') closeQRModal();
+    });
+    document.getElementById('generate-qr-btn').addEventListener('click', generateQRCode);
+    document.getElementById('download-qr-btn').addEventListener('click', downloadQRCode);
+
     // Settings controls
     document.getElementById('modal-theme-select').addEventListener('change', (e) => {
         const theme = e.target.value;
@@ -1046,6 +1054,26 @@ function initializeEventListeners() {
             .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
     });
 
+    document.getElementById('modal-share-fullscreen-btn').addEventListener('click', () => {
+        saveCurrentProject();
+        const librarySelect = document.getElementById('library-select');
+        const libraryValue = librarySelect ? librarySelect.value : '';
+        
+        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
+            h: editors.html.getValue(),
+            c: editors.css.getValue(),
+            j: editors.js.getValue(),
+            l: libraryValue
+        }));
+        
+        const url = `${window.location.origin}${window.location.pathname}?data=${compressed}&fullscreen`;
+        navigator.clipboard.writeText(url)
+            .then(() => showToast('Ссылка с полноэкранным режимом скопирована!', 'success'))
+            .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
+    });
+
+    document.getElementById('modal-qr-btn').addEventListener('click', openQRModal);
+
     // Short link buttons in settings
     document.getElementById('modal-create-link-btn').addEventListener('click', () => {
         openShortLinkModal('create');
@@ -1121,6 +1149,7 @@ function initializeEventListeners() {
         if (e.key === 'Escape') {
             closeSettingsModal();
             closeShortLinkModal();
+            closeQRModal();
         }
     });
 }
@@ -1128,6 +1157,7 @@ function initializeEventListeners() {
 function loadFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const compressedData = urlParams.get('data');
+    const fullscreenMode = urlParams.has('fullscreen');
 
     if (compressedData) {
         try {
@@ -1148,6 +1178,15 @@ function loadFromURL() {
         } catch (e) {
             showToast('Ошибка при загрузке из ссылки', 'error');
         }
+    }
+
+    // Проверяем параметр fullscreen и автоматически открываем полноэкранный режим
+    if (fullscreenMode) {
+        // Ждем немного, чтобы редакторы успели инициализироваться
+        setTimeout(() => {
+            toggleFullscreen();
+            showToast('Открыто в полноэкранном режиме 🖥️', 'info');
+        }, 1000);
     }
 }
 
@@ -1604,4 +1643,141 @@ function showResult(text, type) {
     const resultDiv = document.getElementById('link-result');
     resultDiv.textContent = text;
     resultDiv.className = `link-result ${type}`;
+}
+
+// QR Code functionality
+function openQRModal() {
+    const modal = document.getElementById('qr-modal');
+    
+    // Заполняем информацию о текущем проекте
+    const projectName = projects[currentProject]?.name || 'Текущий проект';
+    document.getElementById('qr-project-name').value = projectName;
+    
+    // Генерируем URL проекта с полноэкранным режимом для QR-кода
+    const baseUrl = generateProjectUrl();
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    const fullscreenUrl = baseUrl + separator + 'fullscreen';
+    document.getElementById('qr-project-url').value = fullscreenUrl;
+    
+    // Очищаем предыдущий QR-код
+    document.getElementById('qr-code-display').innerHTML = '';
+    document.getElementById('download-qr-btn').style.display = 'none';
+    
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Автоматически генерируем QR-код
+    generateQRCode();
+}
+
+function updateQRUrl() {
+    // Эта функция больше не нужна, так как QR всегда генерируется с fullscreen
+}
+
+function closeQRModal() {
+    const modal = document.getElementById('qr-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+async function generateQRCode() {
+    const projectUrl = document.getElementById('qr-project-url').value;
+    const qrDisplay = document.getElementById('qr-code-display');
+    const qrLoading = document.getElementById('qr-loading');
+    const downloadBtn = document.getElementById('download-qr-btn');
+    
+    if (!projectUrl) {
+        showToast('Ошибка: URL проекта не сгенерирован', 'error');
+        return;
+    }
+    
+    try {
+        // Показываем индикатор загрузки
+        qrDisplay.innerHTML = '';
+        qrLoading.style.display = 'flex';
+        downloadBtn.style.display = 'none';
+        
+        // Кодируем URL для использования в API
+        const encodedUrl = encodeURIComponent(projectUrl);
+        
+        // Формируем URL для API генерации QR-кода
+        const qrApiUrl = `https://public-api.qr-code-generator.com/v1/create/free?image_format=SVG&image_width=500&foreground_color=%23000000&frame_color=%23000000&frame_name=no-frame&qr_code_logo=&qr_code_pattern=&qr_code_text=${encodedUrl}`;
+        
+        // Делаем запрос к API
+        const response = await fetch(qrApiUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Получаем SVG как текст
+        const svgText = await response.text();
+        
+        // Скрываем индикатор загрузки
+        qrLoading.style.display = 'none';
+        
+        // Отображаем QR-код
+        qrDisplay.innerHTML = svgText;
+        
+        // Показываем кнопку скачивания
+        downloadBtn.style.display = 'inline-flex';
+        
+        showToast('QR-код успешно сгенерирован!', 'success');
+        
+    } catch (error) {
+        console.error('Ошибка генерации QR-кода:', error);
+        
+        // Скрываем индикатор загрузки
+        qrLoading.style.display = 'none';
+        
+        // Показываем ошибку
+        qrDisplay.innerHTML = `
+            <div style="text-align: center; color: #dc3545; padding: 20px;">
+                <p>❌ Ошибка генерации QR-кода</p>
+                <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
+            </div>
+        `;
+        
+        showToast('Ошибка генерации QR-кода: ' + error.message, 'error');
+    }
+}
+
+function downloadQRCode() {
+    const qrDisplay = document.getElementById('qr-code-display');
+    const svgElement = qrDisplay.querySelector('svg');
+    
+    if (!svgElement) {
+        showToast('QR-код не найден для скачивания', 'error');
+        return;
+    }
+    
+    try {
+        // Получаем SVG как строку
+        const svgData = new XMLSerializer().serializeToString(svgElement);
+        
+        // Создаем Blob с SVG данными
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        
+        // Создаем URL для скачивания
+        const url = URL.createObjectURL(svgBlob);
+        
+        // Создаем ссылку для скачивания
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `${projects[currentProject]?.name || 'project'}-qr-code.svg`;
+        
+        // Запускаем скачивание
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        
+        // Освобождаем URL
+        URL.revokeObjectURL(url);
+        
+        showToast('QR-код скачан!', 'success');
+        
+    } catch (error) {
+        console.error('Ошибка скачивания QR-кода:', error);
+        showToast('Ошибка скачивания QR-кода: ' + error.message, 'error');
+    }
 }

@@ -117,3 +117,17 @@ body.theme-purple .toast {
     color: white !important;
     border-color: rgba(255, 255, 255, 0.3) !important;
 }
+
+/* Purple theme QR modal */
+body.theme-purple .qr-code-container {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.theme-purple #qr-code-display svg {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.theme-purple #qr-loading {
+    color: white !important;
+}
