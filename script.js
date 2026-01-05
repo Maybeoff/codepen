@@ -1079,11 +1079,32 @@ function initializeEventListeners() {
             .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
     });
 
+    document.getElementById('modal-share-raw-btn').addEventListener('click', () => {
+        saveCurrentProject();
+        const librarySelect = document.getElementById('library-select');
+        const libraryValue = librarySelect ? librarySelect.value : '';
+        
+        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
+            h: editors.html.getValue(),
+            c: editors.css.getValue(),
+            j: editors.js.getValue(),
+            l: libraryValue
+        }));
+        
+        const url = `${window.location.origin}${window.location.pathname}?data=${compressed}&raw`;
+        navigator.clipboard.writeText(url)
+            .then(() => showToast('Ссылка с чистым HTML скопирована!', 'success'))
+            .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
+    });
+
     document.getElementById('modal-qr-btn').addEventListener('click', openQRModal);
 
     // Short link buttons in settings
     document.getElementById('modal-create-link-btn').addEventListener('click', () => {
         openShortLinkModal('create');
+    });
+    document.getElementById('modal-create-raw-link-btn').addEventListener('click', () => {
+        openShortLinkModal('create-raw');
     });
     document.getElementById('modal-view-links-btn').addEventListener('click', () => {
         openShortLinkModal('view');
@@ -1165,11 +1186,18 @@ function loadFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const compressedData = urlParams.get('data');
     const fullscreenMode = urlParams.has('fullscreen');
+    const rawMode = urlParams.has('raw');
 
     if (compressedData) {
         try {
             const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
             const project = JSON.parse(decompressed);
+
+            // Если включен raw режим, отображаем только чистый HTML
+            if (rawMode) {
+                displayRawHTML(project);
+                return;
+            }
 
             if (project.h !== undefined) editors.html.setValue(project.h);
             if (project.c !== undefined) editors.css.setValue(project.c);
@@ -1195,6 +1223,47 @@ function loadFromURL() {
             showToast('Открыто в полноэкранном режиме 🖥️', 'info');
         }, 1000);
     }
+}
+
+function displayRawHTML(project) {
+    // Скрываем весь интерфейс редактора
+    document.body.innerHTML = '';
+    
+    // Получаем данные проекта
+    const html = project.h || '';
+    const css = project.c || '';
+    const js = project.j || '';
+    const library = project.l || '';
+
+    // Создаем чистый HTML документ
+    let libTag = '';
+    if (library) {
+        if (library.includes('.css')) {
+            libTag = `<link rel="stylesheet" href="${library}">`;
+        } else {
+            libTag = `<script src="${library}"></script>`;
+        }
+    }
+
+    const rawHTML = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raw HTML</title>
+    ${libTag}
+    <style>${css}</style>
+</head>
+<body>
+    ${html}
+    <script>${js}</script>
+</body>
+</html>`;
+
+    // Заменяем содержимое документа на чистый HTML
+    document.open();
+    document.write(rawHTML);
+    document.close();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1389,6 +1458,19 @@ function openShortLinkModal(mode = 'create') {
             // Генерируем URL проекта
             const projectUrl = generateProjectUrl();
             document.getElementById('project-url').value = projectUrl;
+            break;
+            
+        case 'create-raw':
+            title.textContent = '📄 Создать Raw ссылку';
+            document.getElementById('create-link-section').style.display = 'block';
+            
+            // Заполняем информацию о текущем проекте
+            const rawProjectName = projects[currentProject]?.name || 'Текущий проект';
+            document.getElementById('current-project-name').value = rawProjectName + ' (Raw HTML)';
+            
+            // Генерируем Raw URL проекта
+            const rawProjectUrl = generateProjectUrl() + '&raw';
+            document.getElementById('project-url').value = rawProjectUrl;
             break;
             
         case 'view':
