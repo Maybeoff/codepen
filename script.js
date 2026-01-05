@@ -1180,6 +1180,71 @@ function initializeEventListeners() {
         }
     });
 
+    document.getElementById('modal-update-raw-btn').addEventListener('click', async () => {
+        try {
+            // Ищем последнюю созданную Raw ссылку для текущего проекта
+            const rawLinks = JSON.parse(localStorage.getItem('codepen-raw-links') || '[]');
+            const projectRawLinks = rawLinks.filter(link => link.projectId === currentProject);
+            
+            if (projectRawLinks.length === 0) {
+                showToast('У этого проекта нет Raw ссылок. Создайте сначала.', 'error');
+                return;
+            }
+            
+            // Берем последнюю созданную ссылку
+            const lastRawLink = projectRawLinks[projectRawLinks.length - 1];
+            
+            if (!confirm(`Обновить Raw ссылку ${lastRawLink.shortUrl}?\nСтарое содержимое будет заменено новым.`)) {
+                return;
+            }
+            
+            saveCurrentProject();
+            const libraryValue = localStorage.getItem('codepen-library') || '';
+            
+            const projectData = {
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue,
+                projectName: projects[currentProject]?.name || 'Проект'
+            };
+            
+            showToast('Обновление Raw ссылки...', 'info');
+            
+            // Отправляем PUT запрос для обновления
+            const response = await fetch(`https://codepen.fem-boy.ru/api/project/${lastRawLink.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(projectData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Обновляем данные в localStorage
+                const updatedLink = {
+                    ...lastRawLink,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                // Обновляем в массиве raw ссылок
+                const linkIndex = rawLinks.findIndex(link => link.id === lastRawLink.id);
+                if (linkIndex !== -1) {
+                    rawLinks[linkIndex] = updatedLink;
+                    localStorage.setItem('codepen-raw-links', JSON.stringify(rawLinks));
+                }
+                
+                showToast(`Raw ссылка обновлена: ${lastRawLink.shortUrl}`, 'success');
+            } else {
+                showToast('Ошибка обновления Raw ссылки: ' + (result.error || 'Неизвестная ошибка'), 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка сети: ' + error.message, 'error');
+        }
+    });
+
     document.getElementById('modal-qr-btn').addEventListener('click', openQRModal);
 
     // Short link buttons in settings
