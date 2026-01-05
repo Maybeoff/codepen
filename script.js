@@ -1080,22 +1080,54 @@ function initializeEventListeners() {
             .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
     });
 
-    document.getElementById('modal-share-raw-btn').addEventListener('click', () => {
-        saveCurrentProject();
-        const librarySelect = document.getElementById('library-select');
-        const libraryValue = librarySelect ? librarySelect.value : '';
-        
-        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
-            h: editors.html.getValue(),
-            c: editors.css.getValue(),
-            j: editors.js.getValue(),
-            l: libraryValue
-        }));
-        
-        const url = `${window.location.origin}${window.location.pathname}?data=${compressed}&raw`;
-        navigator.clipboard.writeText(url)
-            .then(() => showToast('Ссылка с чистым HTML скопирована!', 'success'))
-            .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
+    document.getElementById('modal-share-raw-btn').addEventListener('click', async () => {
+        try {
+            saveCurrentProject();
+            const libraryValue = localStorage.getItem('codepen-library') || '';
+            
+            const projectData = {
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue,
+                projectName: projects[currentProject]?.name || 'Проект'
+            };
+            
+            showToast('Создание Raw ссылки...', 'info');
+            
+            const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(projectData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
+                
+                // Сохраняем raw ссылку
+                saveRawLink({
+                    id: result.id,
+                    url: rawUrl,
+                    shortUrl: rawUrl,
+                    projectName: projects[currentProject]?.name || 'Проект',
+                    projectId: currentProject,
+                    type: 'raw',
+                    createdAt: new Date().toISOString()
+                });
+                
+                navigator.clipboard.writeText(rawUrl)
+                    .then(() => showToast('Raw ссылка скопирована!', 'success'))
+                    .catch(() => showToast('Raw ссылка создана: ' + rawUrl, 'success'));
+            } else {
+                showToast('Ошибка создания Raw ссылки: ' + (result.error || 'Неизвестная ошибка'), 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка сети: ' + error.message, 'error');
+        }
     });
 
     document.getElementById('modal-qr-btn').addEventListener('click', openQRModal);
@@ -1530,13 +1562,17 @@ async function createShortLink() {
     // Проверяем, создаём ли мы raw ссылку
     const isRawLink = projectUrl.includes('&raw');
     
-    if (!isRawLink) {
-        // Проверяем, есть ли уже ссылка для этого проекта (только для обычных ссылок)
-        const existingLink = getProjectLink(currentProject);
-        if (existingLink) {
-            showResult(`У этого проекта уже есть ссылка: ${existingLink.shortUrl}\n\nИспользуйте "Обновить ссылку" для изменения.`, 'error');
-            return;
-        }
+    if (isRawLink) {
+        // Для raw ссылок используем новый API
+        await createRawLink();
+        return;
+    }
+    
+    // Проверяем, есть ли уже ссылка для этого проекта (только для обычных ссылок)
+    const existingLink = getProjectLink(currentProject);
+    if (existingLink) {
+        showResult(`У этого проекта уже есть ссылка: ${existingLink.shortUrl}\n\nИспользуйте "Обновить ссылку" для изменения.`, 'error');
+        return;
     }
     
     try {
@@ -1557,32 +1593,17 @@ async function createShortLink() {
         if (result.success) {
             const shortUrl = `https://click.fem-boy.ru/${result.code}`;
             
-            if (isRawLink) {
-                // Для raw ссылок сохраняем отдельно
-                saveRawLink({
-                    id: result.id,
-                    code: result.code,
-                    url: projectUrl,
-                    shortUrl: shortUrl,
-                    secretKey: result.secretKey,
-                    projectName: projects[currentProject]?.name || 'Проект',
-                    projectId: currentProject,
-                    type: 'raw',
-                    createdAt: new Date().toISOString()
-                });
-            } else {
-                // Сохраняем в localStorage с привязкой к проекту
-                saveProjectLink(currentProject, {
-                    id: result.id,
-                    code: result.code,
-                    url: projectUrl,
-                    shortUrl: shortUrl,
-                    secretKey: result.secretKey,
-                    projectName: projects[currentProject]?.name || 'Проект',
-                    projectId: currentProject,
-                    createdAt: new Date().toISOString()
-                });
-            }
+            // Сохраняем в localStorage с привязкой к проекту
+            saveProjectLink(currentProject, {
+                id: result.id,
+                code: result.code,
+                url: projectUrl,
+                shortUrl: shortUrl,
+                secretKey: result.secretKey,
+                projectName: projects[currentProject]?.name || 'Проект',
+                projectId: currentProject,
+                createdAt: new Date().toISOString()
+            });
             
             // Простой вывод - только ссылка
             showResult(shortUrl, 'success');
@@ -1598,6 +1619,64 @@ async function createShortLink() {
         
     } catch (error) {
         showResult(`❌ Ошибка сети: ${error.message}`, 'error');
+    }
+}
+
+async function createRawLink() {
+    try {
+        showResult('Создание Raw ссылки...', '');
+        
+        // Получаем данные проекта
+        saveCurrentProject();
+        const libraryValue = localStorage.getItem('codepen-library') || '';
+        
+        const projectData = {
+            html: editors.html.getValue(),
+            css: editors.css.getValue(),
+            js: editors.js.getValue(),
+            library: libraryValue,
+            projectName: projects[currentProject]?.name || 'Проект'
+        };
+        
+        const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(projectData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
+            
+            // Сохраняем raw ссылку
+            saveRawLink({
+                id: result.id,
+                url: rawUrl,
+                shortUrl: rawUrl,
+                projectName: projects[currentProject]?.name || 'Проект',
+                projectId: currentProject,
+                type: 'raw',
+                createdAt: new Date().toISOString()
+            });
+            
+            // Простой вывод - только ссылка
+            showResult(rawUrl, 'success');
+            
+            // Копируем ссылку в буфер обмена
+            navigator.clipboard.writeText(rawUrl)
+                .then(() => showToast('Raw ссылка скопирована в буфер обмена!', 'success'))
+                .catch(() => showToast('Raw ссылка создана', 'success'));
+                
+        } else {
+            showResult(`❌ Ошибка: ${result.error || 'Не удалось создать Raw ссылку'}`, 'error');
+        }
+        
+    } catch (error) {
+        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
+        console.error('Ошибка создания Raw ссылки:', error);
     }
 }
 
@@ -1828,63 +1907,88 @@ async function createShortLinkForQR(mode = 'fullscreen') {
         // Показываем индикатор загрузки
         qrDisplay.innerHTML = '';
         qrLoading.style.display = 'flex';
-        qrLoading.querySelector('p').textContent = 'Создание короткой ссылки...';
+        qrLoading.querySelector('p').textContent = 'Создание ссылки...';
         
-        // Генерируем полный URL проекта
-        const baseUrl = generateProjectUrl();
-        const separator = baseUrl.includes('?') ? '&' : '?';
-        const fullUrl = baseUrl + separator + mode;
+        let finalUrl;
         
-        // Создаем короткую ссылку через API
-        const response = await fetch('https://click.fem-boy.ru/api/code', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                url: fullUrl
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            const shortUrl = `https://click.fem-boy.ru/${result.code}`;
+        if (mode === 'raw') {
+            // Для raw режима используем новый API
+            saveCurrentProject();
+            const libraryValue = localStorage.getItem('codepen-library') || '';
             
-            // Сохраняем ссылку в зависимости от типа
-            if (mode === 'raw') {
+            const projectData = {
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue,
+                projectName: projects[currentProject]?.name || 'Проект'
+            };
+            
+            const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(projectData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                finalUrl = `https://codepen.fem-boy.ru/${result.id}`;
+                
+                // Сохраняем raw ссылку
                 saveRawLink({
                     id: result.id,
-                    code: result.code,
-                    url: fullUrl,
-                    shortUrl: shortUrl,
-                    secretKey: result.secretKey,
+                    url: finalUrl,
+                    shortUrl: finalUrl,
                     projectName: projects[currentProject]?.name || 'Проект',
                     projectId: currentProject,
                     type: 'raw',
                     createdAt: new Date().toISOString()
                 });
+            } else {
+                throw new Error(result.error || 'Не удалось создать Raw ссылку');
             }
-            // Для fullscreen не сохраняем, так как это временные QR-коды
-            
-            // Обновляем поле URL
-            qrUrlField.value = shortUrl;
-            
-            // Обновляем индикатор загрузки
-            qrLoading.querySelector('p').textContent = 'Генерация QR-кода...';
-            
-            // Генерируем QR-код для короткой ссылки
-            await generateQRCodeFromUrl(shortUrl);
-            
-            const modeText = mode === 'raw' ? 'Raw HTML' : 'полноэкранным режимом';
-            showToast(`QR-код создан с ${modeText}!`, 'success');
-            
         } else {
-            throw new Error(result.error || 'Не удалось создать короткую ссылку');
+            // Для fullscreen используем старый API с короткими ссылками
+            const baseUrl = generateProjectUrl();
+            const separator = baseUrl.includes('?') ? '&' : '?';
+            const fullUrl = baseUrl + separator + mode;
+            
+            const response = await fetch('https://click.fem-boy.ru/api/code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: fullUrl
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                finalUrl = `https://click.fem-boy.ru/${result.code}`;
+            } else {
+                throw new Error(result.error || 'Не удалось создать короткую ссылку');
+            }
         }
         
+        // Обновляем поле URL
+        qrUrlField.value = finalUrl;
+        
+        // Обновляем индикатор загрузки
+        qrLoading.querySelector('p').textContent = 'Генерация QR-кода...';
+        
+        // Генерируем QR-код для ссылки
+        await generateQRCodeFromUrl(finalUrl);
+        
+        const modeText = mode === 'raw' ? 'Raw HTML' : 'полноэкранным режимом';
+        showToast(`QR-код создан с ${modeText}!`, 'success');
+        
     } catch (error) {
-        console.error('Ошибка создания короткой ссылки для QR:', error);
+        console.error('Ошибка создания ссылки для QR:', error);
         
         // Скрываем индикатор загрузки
         qrLoading.style.display = 'none';
@@ -1892,14 +1996,14 @@ async function createShortLinkForQR(mode = 'fullscreen') {
         // Показываем ошибку
         qrDisplay.innerHTML = `
             <div style="text-align: center; color: #dc3545; padding: 20px;">
-                <p>❌ Ошибка создания короткой ссылки</p>
+                <p>❌ Ошибка создания ссылки</p>
                 <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
                 <button onclick="createShortLinkForQR('${mode}')" style="margin-top: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Попробовать снова</button>
             </div>
         `;
         
-        qrUrlField.value = 'Ошибка создания короткой ссылки';
-        showToast('Ошибка создания короткой ссылки: ' + error.message, 'error');
+        qrUrlField.value = 'Ошибка создания ссылки';
+        showToast('Ошибка создания ссылки: ' + error.message, 'error');
     }
 }
 
