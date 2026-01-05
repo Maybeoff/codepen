@@ -869,6 +869,55 @@ function toggleFullscreen() {
     }
 }
 
+function openRawInNewTab() {
+    // Сохраняем текущий проект
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    
+    // Генерируем Raw HTML
+    const html = editors.html.getValue();
+    const css = editors.css.getValue();
+    const js = editors.js.getValue();
+    
+    let libTag = '';
+    if (libraryValue) {
+        if (libraryValue.includes('.css')) {
+            libTag = `<link rel="stylesheet" href="${libraryValue}">`;
+        } else {
+            libTag = `<script src="${libraryValue}"></script>`;
+        }
+    }
+
+    const rawHTML = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${projects[currentProject]?.name || 'CodePen Pro Project'}</title>
+    ${libTag}
+    <style>${css}</style>
+</head>
+<body>
+    ${html}
+    <script>${js}</script>
+</body>
+</html>`;
+
+    // Создаем Blob с HTML содержимым
+    const blob = new Blob([rawHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    
+    // Открываем в новой вкладке
+    const newWindow = window.open(url, '_blank');
+    
+    // Освобождаем URL через некоторое время
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+    }, 1000);
+    
+    showToast('Raw HTML открыт в новой вкладке', 'success');
+}
+
 function setPreviewSize(size) {
     const wrapper = document.querySelector('.preview-wrapper');
     const buttons = document.querySelectorAll('.preview-size-btn');
@@ -930,6 +979,7 @@ function initializeEventListeners() {
     document.getElementById('run-btn').addEventListener('click', updatePreview);
     document.getElementById('format-btn').addEventListener('click', formatCode);
     document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+    document.getElementById('open-raw-btn').addEventListener('click', openRawInNewTab);
     document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('snow-btn').addEventListener('click', toggleSnowfall);
     document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
