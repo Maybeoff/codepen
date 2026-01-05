@@ -1731,33 +1731,55 @@ async function updateProjectLink() {
         return;
     }
     
-    const newUrl = generateProjectUrl();
+    if (!confirm('Обновление пересоздаст ссылку с новым содержимым. Продолжить?')) {
+        return;
+    }
     
     try {
         showResult('Обновление ссылки проекта...', '');
         
-        const response = await fetch(`https://click.fem-boy.ru/api/links/code/${projectLink.id}`, {
-            method: 'PUT',
+        // Получаем данные проекта
+        saveCurrentProject();
+        const libraryValue = localStorage.getItem('codepen-library') || '';
+        
+        const projectData = {
+            html: editors.html.getValue(),
+            css: editors.css.getValue(),
+            js: editors.js.getValue(),
+            library: libraryValue,
+            projectName: projects[currentProject]?.name || 'Проект'
+        };
+        
+        const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                url: newUrl,
-                secretKey: projectLink.secretKey
-            })
+            body: JSON.stringify(projectData)
         });
         
         const result = await response.json();
         
         if (result.success) {
-            // Обновляем сохраненную ссылку
-            projectLink.url = newUrl;
-            saveProjectLink(currentProject, projectLink);
+            const newRawUrl = `https://codepen.fem-boy.ru/${result.id}`;
             
-            showResult(`✅ Ссылка проекта обновлена!\n\n🔗 ${projectLink.shortUrl}`, 'success');
+            // Обновляем сохраненную ссылку
+            const updatedLink = {
+                ...projectLink,
+                id: result.id,
+                url: newRawUrl,
+                shortUrl: newRawUrl,
+                updatedAt: new Date().toISOString()
+            };
+            
+            saveProjectLink(currentProject, updatedLink);
+            
+            showResult(`✅ Ссылка проекта обновлена!\n\n🔗 ${newRawUrl}`, 'success');
             
             // Обновляем отображение текущей ссылки
-            document.getElementById('current-project-link').value = projectLink.shortUrl;
+            document.getElementById('current-project-link').value = newRawUrl;
+            
+            showToast('Ссылка проекта обновлена', 'success');
             
         } else {
             showResult(`❌ Ошибка: ${result.error || 'Не удалось обновить ссылку'}`, 'error');
