@@ -954,7 +954,8 @@ function initializeEventListeners() {
     document.getElementById('qr-modal').addEventListener('click', (e) => {
         if (e.target.id === 'qr-modal') closeQRModal();
     });
-    document.getElementById('generate-qr-btn').addEventListener('click', createShortLinkForQR);
+    document.getElementById('generate-qr-btn').addEventListener('click', () => createShortLinkForQR('fullscreen'));
+    document.getElementById('generate-raw-qr-btn').addEventListener('click', () => createShortLinkForQR('raw'));
     document.getElementById('download-qr-btn').addEventListener('click', downloadQRCode);
 
     // Settings controls
@@ -1526,11 +1527,16 @@ async function createShortLink() {
         return;
     }
     
-    // Проверяем, есть ли уже ссылка для этого проекта
-    const existingLink = getProjectLink(currentProject);
-    if (existingLink) {
-        showResult(`У этого проекта уже есть ссылка: ${existingLink.shortUrl}\n\nИспользуйте "Обновить ссылку" для изменения.`, 'error');
-        return;
+    // Проверяем, создаём ли мы raw ссылку
+    const isRawLink = projectUrl.includes('&raw');
+    
+    if (!isRawLink) {
+        // Проверяем, есть ли уже ссылка для этого проекта (только для обычных ссылок)
+        const existingLink = getProjectLink(currentProject);
+        if (existingLink) {
+            showResult(`У этого проекта уже есть ссылка: ${existingLink.shortUrl}\n\nИспользуйте "Обновить ссылку" для изменения.`, 'error');
+            return;
+        }
     }
     
     try {
@@ -1551,17 +1557,32 @@ async function createShortLink() {
         if (result.success) {
             const shortUrl = `https://click.fem-boy.ru/${result.code}`;
             
-            // Сохраняем в localStorage с привязкой к проекту
-            saveProjectLink(currentProject, {
-                id: result.id,
-                code: result.code,
-                url: projectUrl,
-                shortUrl: shortUrl,
-                secretKey: result.secretKey,
-                projectName: projects[currentProject]?.name || 'Проект',
-                projectId: currentProject,
-                createdAt: new Date().toISOString()
-            });
+            if (isRawLink) {
+                // Для raw ссылок сохраняем отдельно
+                saveRawLink({
+                    id: result.id,
+                    code: result.code,
+                    url: projectUrl,
+                    shortUrl: shortUrl,
+                    secretKey: result.secretKey,
+                    projectName: projects[currentProject]?.name || 'Проект',
+                    projectId: currentProject,
+                    type: 'raw',
+                    createdAt: new Date().toISOString()
+                });
+            } else {
+                // Сохраняем в localStorage с привязкой к проекту
+                saveProjectLink(currentProject, {
+                    id: result.id,
+                    code: result.code,
+                    url: projectUrl,
+                    shortUrl: shortUrl,
+                    secretKey: result.secretKey,
+                    projectName: projects[currentProject]?.name || 'Проект',
+                    projectId: currentProject,
+                    createdAt: new Date().toISOString()
+                });
+            }
             
             // Простой вывод - только ссылка
             showResult(shortUrl, 'success');
@@ -1598,6 +1619,18 @@ function saveProjectLink(projectId, linkData) {
     localStorage.setItem('codepen-project-links', JSON.stringify(projectLinks));
     
     // НЕ сохраняем в общий список, чтобы избежать дубликатов
+}
+
+function saveRawLink(linkData) {
+    let rawLinks = JSON.parse(localStorage.getItem('codepen-raw-links') || '[]');
+    rawLinks.push(linkData);
+    
+    // Ограничиваем количество сохраненных raw ссылок (последние 100)
+    if (rawLinks.length > 100) {
+        rawLinks = rawLinks.slice(-100);
+    }
+    
+    localStorage.setItem('codepen-raw-links', JSON.stringify(rawLinks));
 }
 
 function getProjectLink(projectId) {
@@ -1704,11 +1737,17 @@ function viewSavedLinks() {
 function displaySavedLinks() {
     // Получаем ссылки из хранилища проектов
     const projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
-    const savedLinks = Object.values(projectLinks);
+    const rawLinks = JSON.parse(localStorage.getItem('codepen-raw-links') || '[]');
+    
+    // Объединяем все ссылки
+    const allLinks = [
+        ...Object.values(projectLinks),
+        ...rawLinks
+    ];
     
     const container = document.getElementById('saved-links-list');
     
-    if (savedLinks.length === 0) {
+    if (allLinks.length === 0) {
         container.innerHTML = '<p>У вас пока нет сохраненных ссылок</p>';
         return;
     }
@@ -1716,15 +1755,19 @@ function displaySavedLinks() {
     container.innerHTML = '';
     
     // Сортируем по дате создания (новые сначала)
-    savedLinks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    allLinks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     
-    savedLinks.forEach((link, index) => {
+    allLinks.forEach((link, index) => {
         const date = new Date(link.createdAt).toLocaleDateString('ru-RU');
         const linkItem = document.createElement('div');
         linkItem.className = 'saved-link-item';
         
+        // Определяем тип ссылки
+        const linkType = link.type === 'raw' ? ' (Raw HTML)' : '';
+        const linkIcon = link.type === 'raw' ? '📄' : '🔗';
+        
         linkItem.innerHTML = `
-            <div class="link-name">${link.projectName}</div>
+            <div class="link-name">${linkIcon} ${link.projectName}${linkType}</div>
             <div class="link-url" onclick="copyToClipboard('${link.shortUrl}')">${link.shortUrl}</div>
             <div class="link-date">Создана: ${date}</div>
             <div class="link-actions">
@@ -1772,11 +1815,11 @@ function openQRModal() {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
     
-    // Автоматически создаем короткую ссылку и генерируем QR-код
-    createShortLinkForQR();
+    // Автоматически создаем короткую ссылку и генерируем QR-код (по умолчанию fullscreen)
+    createShortLinkForQR('fullscreen');
 }
 
-async function createShortLinkForQR() {
+async function createShortLinkForQR(mode = 'fullscreen') {
     const qrDisplay = document.getElementById('qr-code-display');
     const qrLoading = document.getElementById('qr-loading');
     const qrUrlField = document.getElementById('qr-project-url');
@@ -1790,7 +1833,7 @@ async function createShortLinkForQR() {
         // Генерируем полный URL проекта
         const baseUrl = generateProjectUrl();
         const separator = baseUrl.includes('?') ? '&' : '?';
-        const fullscreenUrl = baseUrl + separator + 'fullscreen';
+        const fullUrl = baseUrl + separator + mode;
         
         // Создаем короткую ссылку через API
         const response = await fetch('https://click.fem-boy.ru/api/code', {
@@ -1799,7 +1842,7 @@ async function createShortLinkForQR() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                url: fullscreenUrl
+                url: fullUrl
             })
         });
         
@@ -1807,6 +1850,22 @@ async function createShortLinkForQR() {
         
         if (result.success) {
             const shortUrl = `https://click.fem-boy.ru/${result.code}`;
+            
+            // Сохраняем ссылку в зависимости от типа
+            if (mode === 'raw') {
+                saveRawLink({
+                    id: result.id,
+                    code: result.code,
+                    url: fullUrl,
+                    shortUrl: shortUrl,
+                    secretKey: result.secretKey,
+                    projectName: projects[currentProject]?.name || 'Проект',
+                    projectId: currentProject,
+                    type: 'raw',
+                    createdAt: new Date().toISOString()
+                });
+            }
+            // Для fullscreen не сохраняем, так как это временные QR-коды
             
             // Обновляем поле URL
             qrUrlField.value = shortUrl;
@@ -1817,7 +1876,8 @@ async function createShortLinkForQR() {
             // Генерируем QR-код для короткой ссылки
             await generateQRCodeFromUrl(shortUrl);
             
-            showToast('QR-код создан с короткой ссылкой!', 'success');
+            const modeText = mode === 'raw' ? 'Raw HTML' : 'полноэкранным режимом';
+            showToast(`QR-код создан с ${modeText}!`, 'success');
             
         } else {
             throw new Error(result.error || 'Не удалось создать короткую ссылку');
@@ -1834,7 +1894,7 @@ async function createShortLinkForQR() {
             <div style="text-align: center; color: #dc3545; padding: 20px;">
                 <p>❌ Ошибка создания короткой ссылки</p>
                 <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
-                <button onclick="createShortLinkForQR()" style="margin-top: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Попробовать снова</button>
+                <button onclick="createShortLinkForQR('${mode}')" style="margin-top: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Попробовать снова</button>
             </div>
         `;
         
