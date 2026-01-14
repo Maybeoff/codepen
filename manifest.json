@@ -2,7 +2,7 @@
     "name": "CodePen Pro",
     "short_name": "CodePen",
     "description": "Онлайн редактор кода HTML, CSS и JavaScript",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
