@@ -5,6 +5,10 @@ console.log('Запуск CodePen Pro Desktop...');
 
 app.disableHardwareAcceleration();
 
+// Игнорируем SSL ошибки (просроченные сертификаты)
+app.commandLine.appendSwitch('ignore-certificate-errors');
+app.commandLine.appendSwitch('allow-insecure-localhost', 'true');
+
 let mainWindow;
 
 function createWindow() {
