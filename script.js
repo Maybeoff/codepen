@@ -78,6 +78,25 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Safe JSON parsing for API responses
+async function safeJsonParse(response) {
+    const contentType = response.headers.get('content-type');
+    
+    // Проверяем статус ответа
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
+    }
+    
+    // Проверяем Content-Type
+    if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Сервер вернул не JSON (${contentType}): ${text.substring(0, 100)}`);
+    }
+    
+    return await response.json();
+}
+
 function applyGlobalTheme(theme) {
     // Удаляем все существующие классы тем
     document.body.classList.remove('theme-light', 'theme-dark', 'theme-blue', 'theme-purple');
@@ -1153,7 +1172,7 @@ function initializeEventListeners() {
                 body: JSON.stringify(projectData)
             });
             
-            const result = await response.json();
+            const result = await safeJsonParse(response);
             
             if (result.success) {
                 const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
@@ -1220,7 +1239,7 @@ function initializeEventListeners() {
                 body: JSON.stringify(projectData)
             });
             
-            const result = await response.json();
+            const result = await safeJsonParse(response);
             
             if (result.success) {
                 // Обновляем данные в localStorage
@@ -1703,7 +1722,7 @@ async function createShortLink() {
             })
         });
         
-        const result = await response.json();
+        const result = await safeJsonParse(response);
         
         if (result.success) {
             const shortUrl = `https://click.fem-boy.ru/${result.code}`;
@@ -1761,7 +1780,7 @@ async function createRawLink() {
             body: JSON.stringify(projectData)
         });
         
-        const result = await response.json();
+        const result = await safeJsonParse(response);
         
         if (result.success) {
             const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
@@ -1873,7 +1892,7 @@ async function updateProjectLink() {
             body: JSON.stringify(projectData)
         });
         
-        const result = await response.json();
+        const result = await safeJsonParse(response);
         
         if (result.success) {
             const newRawUrl = `https://codepen.fem-boy.ru/${result.id}`;
@@ -2069,7 +2088,7 @@ async function createShortLinkForQR(mode = 'fullscreen') {
                 body: JSON.stringify(projectData)
             });
             
-            const result = await response.json();
+            const result = await safeJsonParse(response);
             
             if (result.success) {
                 finalUrl = `https://codepen.fem-boy.ru/${result.id}`;
@@ -2103,7 +2122,7 @@ async function createShortLinkForQR(mode = 'fullscreen') {
                 })
             });
             
-            const result = await response.json();
+            const result = await safeJsonParse(response);
             
             if (result.success) {
                 finalUrl = `https://click.fem-boy.ru/${result.code}`;
