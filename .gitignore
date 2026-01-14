@@ -24,11 +24,16 @@ yarn-error.log*
 .cache/
 .parcel-cache/
 
-# Зависимости (если будут добавлены)
+# Зависимости
 node_modules/
 package-lock.json
 yarn.lock
 
-# Сборка (если будет добавлена)
+# Сборка десктопного приложения
+codepen-app/dist/
+codepen-app/build/
+codepen-app/node_modules/
+
+# Сборка (если будет добавлена для веб-версии)
 dist/
 build/
