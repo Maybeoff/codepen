@@ -78,46 +78,6 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Custom prompt function for Electron
-function customPrompt(message, defaultValue = '') {
-    return new Promise((resolve) => {
-        const modal = document.getElementById('prompt-modal');
-        const title = document.getElementById('prompt-modal-title');
-        const label = document.getElementById('prompt-modal-label');
-        const input = document.getElementById('prompt-modal-input');
-        const okBtn = document.getElementById('prompt-modal-ok');
-        const cancelBtn = document.getElementById('prompt-modal-cancel');
-        const closeBtn = document.getElementById('close-prompt-modal');
-        
-        title.textContent = 'Введите значение';
-        label.textContent = message;
-        input.value = defaultValue;
-        modal.style.display = 'flex';
-        modal.classList.add('active');
-        
-        setTimeout(() => input.focus(), 100);
-        
-        const cleanup = (value) => {
-            modal.style.display = 'none';
-            modal.classList.remove('active');
-            okBtn.onclick = null;
-            cancelBtn.onclick = null;
-            closeBtn.onclick = null;
-            input.onkeydown = null;
-            resolve(value);
-        };
-        
-        okBtn.onclick = () => cleanup(input.value.trim() || null);
-        cancelBtn.onclick = () => cleanup(null);
-        closeBtn.onclick = () => cleanup(null);
-        
-        input.onkeydown = (e) => {
-            if (e.key === 'Enter') cleanup(input.value.trim() || null);
-            if (e.key === 'Escape') cleanup(null);
-        };
-    });
-}
-
 // Safe JSON parsing for API responses
 async function safeJsonParse(response) {
     const contentType = response.headers.get('content-type');
@@ -136,7 +96,6 @@ async function safeJsonParse(response) {
     
     return await response.json();
 }
-
 
 function applyGlobalTheme(theme) {
     // Удаляем все существующие классы тем
@@ -683,8 +642,8 @@ function saveCurrentProject() {
     saveProjects();
 }
 
-async function createNewProject() {
-    const name = await customPrompt('Название нового проекта:');
+function createNewProject() {
+    const name = prompt('Название нового проекта:');
     if (!name) return;
     
     const key = 'project_' + Date.now();
