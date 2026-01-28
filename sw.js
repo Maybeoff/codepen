@@ -1,4 +1,4 @@
-const CACHE_NAME = 'codepen-pro-v2';
+const CACHE_NAME = 'codepen-pro-v1';
 const urlsToCache = [
     './',
     './index.html',
@@ -20,9 +20,6 @@ const urlsToCache = [
 
 // Установка Service Worker
 self.addEventListener('install', (event) => {
-    // Принудительно активируем новый SW сразу
-    self.skipWaiting();
-    
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
@@ -37,7 +34,6 @@ self.addEventListener('install', (event) => {
 
 // Активация и очистка старых кэшей
 self.addEventListener('activate', (event) => {
-    // Берем контроль над всеми клиентами сразу
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
@@ -48,40 +44,40 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        }).then(() => {
-            return self.clients.claim();
         })
     );
 });
 
-// Перехват запросов - NETWORK FIRST стратегия
+// Перехват запросов
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        // Сначала пытаемся загрузить из сети
-        fetch(event.request)
+        caches.match(event.request)
             .then((response) => {
-                // Если успешно - кешируем и возвращаем
-                if (response && response.status === 200) {
+                // Возвращаем из кэша или делаем сетевой запрос
+                if (response) {
+                    return response;
+                }
+                
+                return fetch(event.request).then((response) => {
+                    // Не кэшируем если не успешный ответ
+                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                        return response;
+                    }
+                    
+                    // Клонируем ответ для кэширования
                     const responseToCache = response.clone();
                     
                     caches.open(CACHE_NAME)
                         .then((cache) => {
                             cache.put(event.request, responseToCache);
                         });
-                }
-                
-                return response;
+                    
+                    return response;
+                });
             })
             .catch(() => {
-                // Если сеть недоступна - берем из кеша
-                return caches.match(event.request)
-                    .then((response) => {
-                        if (response) {
-                            return response;
-                        }
-                        // Офлайн fallback
-                        return caches.match('./index.html');
-                    });
+                // Офлайн fallback
+                return caches.match('./index.html');
             })
     );
 });

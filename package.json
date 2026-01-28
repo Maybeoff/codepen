@@ -1,32 +1,49 @@
 {
-  "name": "codepen-pro-server",
-  "version": "1.0.0",
-  "description": "Серверная часть для CodePen Pro - API для создания и хранения Raw ссылок",
-  "main": "server-api-example.js",
+  "name": "codepen-pro-desktop",
+  "version": "1.2.0",
+  "description": "CodePen Pro - Мощный десктопный редактор кода для HTML, CSS и JavaScript",
+  "main": "main-simple.js",
   "scripts": {
-    "start": "node server-api-example.js",
-    "dev": "nodemon server-api-example.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win"
   },
   "keywords": [
+    "electron",
     "codepen",
+    "editor",
     "html",
     "css",
-    "javascript",
-    "editor",
-    "api"
+    "javascript"
   ],
   "author": "CodePen Pro Team",
   "license": "MIT",
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "uuid": "^9.0.0"
-  },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
   },
-  "engines": {
-    "node": ">=14.0.0"
+  "build": {
+    "appId": "com.codepen.pro.desktop",
+    "productName": "CodePen Pro",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!temp-codepen/**/*",
+      "!.git/**/*",
+      "!dist/**/*",
+      "!node_modules/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon-512.ico"
+    },
+    "nsis": {
+      "installerIcon": "icons/icon-512.ico",
+      "uninstallerIcon": "icons/icon-512.ico",
+      "installerHeaderIcon": "icons/icon-512.ico"
+    }
   }
 }
