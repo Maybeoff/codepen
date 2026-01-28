@@ -1,7 +1,3 @@
-# Electron сборка
-dist/
-build/
-
 # Node.js
 node_modules/
 npm-debug.log*
@@ -20,3 +16,13 @@ Thumbs.db
 *.tmp
 *.temp
 *~
+
+# Логи
+*.log
+
+# Кэш
+.cache/
+.parcel-cache/
+
+# Electron build
+dist/
