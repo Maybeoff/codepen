@@ -18,12 +18,12 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/icon-192.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/solarized.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
+    <link rel="stylesheet" href="lib/codemirror/codemirror.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/dracula.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/monokai.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/material.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/solarized.min.css">
+    <link rel="stylesheet" href="lib/codemirror/addon/show-hint.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -82,34 +82,35 @@
             </div>
         </div>
     </main>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/html-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/css-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/javascript-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closetag.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/xml-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/indent-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/comment-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/searchcursor.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/jump-to-line.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/standalone.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-html.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-postcss.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-babel.min.js"></script>
+    <script src="lib/lz-string.min.js"></script>
+    <script src="lib/jszip.min.js"></script>
+    <script src="lib/codemirror/codemirror.min.js"></script>
+    <script src="lib/codemirror/mode/xml.min.js"></script>
+    <script src="lib/codemirror/mode/htmlmixed.min.js"></script>
+    <script src="lib/codemirror/mode/css.min.js"></script>
+    <script src="lib/codemirror/mode/javascript.min.js"></script>
+    <script src="lib/codemirror/addon/show-hint.min.js"></script>
+    <script src="lib/codemirror/addon/html-hint.min.js"></script>
+    <script src="lib/codemirror/addon/css-hint.min.js"></script>
+    <script src="lib/codemirror/addon/javascript-hint.min.js"></script>
+    <script src="lib/codemirror/addon/closebrackets.min.js"></script>
+    <script src="lib/codemirror/addon/closetag.min.js"></script>
+    <script src="lib/codemirror/addon/foldcode.min.js"></script>
+    <script src="lib/codemirror/addon/foldgutter.min.js"></script>
+    <script src="lib/codemirror/addon/xml-fold.min.js"></script>
+    <script src="lib/codemirror/addon/indent-fold.min.js"></script>
+    <script src="lib/codemirror/addon/brace-fold.min.js"></script>
+    <script src="lib/codemirror/addon/comment-fold.min.js"></script>
+    <script src="lib/codemirror/addon/search.min.js"></script>
+    <script src="lib/codemirror/addon/searchcursor.min.js"></script>
+    <script src="lib/codemirror/addon/jump-to-line.min.js"></script>
+    <script src="lib/codemirror/addon/dialog.min.js"></script>
+    <link rel="stylesheet" href="lib/codemirror/addon/dialog.min.css">
+    <link rel="stylesheet" href="lib/codemirror/addon/foldgutter.min.css">
+    <script src="lib/prettier-standalone.js"></script>
+    <script src="lib/prettier-parser-html.min.js"></script>
+    <script src="lib/prettier-parser-postcss.min.js"></script>
+    <script src="lib/prettier-parser-babel.min.js"></script>
     <script src="script.js"></script>
     
     <!-- Settings Modal -->
@@ -193,19 +194,19 @@
                         <button id="modal-import-btn" class="settings-btn primary">📥 Импорт из ZIP</button>
                         <button id="modal-share-btn" class="settings-btn primary">🔗 Поделиться</button>
                         <button id="modal-share-fullscreen-btn" class="settings-btn primary">🖥️ Поделиться (полный экран)</button>
-                        <button id="modal-share-raw-btn" class="settings-btn primary">📄 Поделиться (чистый HTML)</button>
-                        <button id="modal-update-raw-btn" class="settings-btn primary">🔄 Обновить Raw ссылку</button>
-                        <button id="modal-qr-btn" class="settings-btn primary">📱 QR-код</button>
+                        <button id="modal-share-raw-btn" class="settings-btn primary" disabled title="API сейчас нету так как админ дебил и не оплатил хостинг">📄 Поделиться (чистый HTML)</button>
+                        <button id="modal-update-raw-btn" class="settings-btn primary" disabled title="API сейчас нету так как админ дебил и не оплатил хостинг">🔄 Обновить Raw ссылку</button>
+                        <button id="modal-qr-btn" class="settings-btn primary" disabled title="API сейчас нету так как админ дебил и не оплатил хостинг">📱 QR-код</button>
                     </div>
                 </div>
 
                 <div class="settings-section">
-                    <h3> Короткие ссылки</h3>
+                    <h3>🔗 Короткие ссылки</h3>
                     <div class="setting-item project-buttons">
-                        <button id="modal-create-link-btn" class="settings-btn success">🔗 Создать ссылку</button>
-                        <button id="modal-create-raw-link-btn" class="settings-btn success">�с Создать Raw ссылку</button>
-                        <button id="modal-view-links-btn" class="settings-btn primary">� МОои ссылки</button>
-                        <button id="modal-update-link-btn" class="settings-btn primary">🔄 Обновить ссылку</button>
+                        <button id="modal-create-link-btn" class="settings-btn success" disabled title="API сейчас нету так как админ дебил и не оплатил хостинг">🔗 Создать ссылку</button>
+                        <button id="modal-create-raw-link-btn" class="settings-btn success" disabled title="API сейчас нету так как админ дебил и не оплатил хостинг">📄 Создать Raw ссылку</button>
+                        <button id="modal-view-links-btn" class="settings-btn primary" disabled title="API сейчас нету так как админ дебил и не оплатил хостинг">📋 Мои ссылки</button>
+                        <button id="modal-update-link-btn" class="settings-btn primary" disabled title="API сейчас нету так как админ дебил и не оплатил хостинг">🔄 Обновить ссылку</button>
                     </div>
                 </div>
             </div>

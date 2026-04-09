@@ -599,6 +599,18 @@ button:focus {
     background: #c82333;
 }
 
+.settings-btn:disabled {
+    background: #6c757d !important;
+    color: #adb5bd !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.settings-btn:disabled:hover {
+    background: #6c757d !important;
+    color: #adb5bd !important;
+}
+
 .link-result {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
