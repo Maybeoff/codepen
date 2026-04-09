@@ -118,6 +118,18 @@ body.theme-purple .toast {
     border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Стилизация выпадающего списка в фиолетовой теме */
+body.theme-purple select option {
+    background-color: #8B5CF6 !important; /* Используем основной фиолетовый цвет из вашей темы */
+    color: white !important;               /* Белый текст для читаемости */
+}
+
+/* Стили для Chrome/Safari, чтобы убрать стандартное выделение, если нужно */
+body.theme-purple select:focus {
+    outline: none !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
 /* Purple theme QR modal */
 body.theme-purple .qr-code-container {
     background: rgba(255, 255, 255, 0.1) !important;

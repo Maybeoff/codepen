@@ -959,11 +959,21 @@ function initializeResizer() {
     const editorContainer = document.querySelector('.editor-container');
     const previewContainer = document.querySelector('.preview-container');
     const main = document.querySelector('main');
+    const previewIframe = document.getElementById('preview');
     
     resizer.addEventListener('mousedown', (e) => {
         isResizing = true;
         document.body.style.cursor = 'col-resize';
         document.body.style.userSelect = 'none';
+        
+        // ВАЖНО: Отключаем события мыши для фрейма, чтобы он не перехватывал курсор
+        if (previewIframe) {
+            previewIframe.style.pointerEvents = 'none';
+        }
+        
+        // Также используем захват указателя (самый надежный способ)
+        resizer.setPointerCapture(e.pointerId);
+        
         e.preventDefault();
     });
     
@@ -981,11 +991,21 @@ function initializeResizer() {
         }
     });
     
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', (e) => {
         if (isResizing) {
             isResizing = false;
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
+            
+            // Включаем события мыши обратно
+            if (previewIframe) {
+                previewIframe.style.pointerEvents = 'auto';
+            }
+            
+            // Освобождаем указатель
+            if (resizer.hasPointerCapture(e.pointerId)) {
+                resizer.releasePointerCapture(e.pointerId);
+            }
             
             setTimeout(() => {
                 Object.values(editors).forEach(editor => editor.refresh());
