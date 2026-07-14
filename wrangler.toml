@@ -1,0 +1,17 @@
+name = "codepen-pro"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+ENVIRONMENT = "production"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "codepen-pro-db"
+database_id = "9d47cc60-07ec-4cc5-9672-66168fd2f39d"
+
+# KV Namespace for files
+[[kv_namespaces]]
+binding = "FILES"
+id = "768eedf98a15496dab489045387a7995"
