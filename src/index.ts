@@ -308,7 +308,7 @@ app.get('/api/stats', async (c) => {
   }
 });
 
-// 8. Просмотр проекта — редирект в редактор
+// 8. Просмотр проекта — HTML страница или редирект в редактор
 app.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
@@ -342,15 +342,55 @@ app.get('/:id', async (c) => {
 </html>`, 404);
     }
 
-    // Increment views
+    // Если ?edit — редирект в редактор
+    if (c.req.query('edit')) {
+      const fullscreen = c.req.query('fullscreen');
+      const editorUrl = `https://maybe.su/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
+      return c.redirect(editorUrl, 302);
+    }
+
+    // Иначе — рендерим HTML страницу
     await c.env.DB.prepare(
       `UPDATE projects SET views = views + 1 WHERE id = ?`
     ).bind(id).run();
 
-    const fullscreen = c.req.query('fullscreen');
-    const editorUrl = `https://maybe.su/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
+    const html = await c.env.FILES.get(`project:${id}:html`) || '';
+    const css = await c.env.FILES.get(`project:${id}:css`) || '';
+    const js = await c.env.FILES.get(`project:${id}:js`) || '';
+    const library = await c.env.FILES.get(`project:${id}:library`) || '';
 
-    return c.redirect(editorUrl, 302);
+    let libTag = '';
+    if (library) {
+      if (library.includes('.css')) {
+        libTag = `<link rel="stylesheet" href="${library}">`;
+      } else {
+        libTag = `<script src="${library}"></script>`;
+      }
+    }
+
+    const htmlPage = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${project.projectName} - CodePen Pro</title>
+    <meta name="description" content="Проект создан в CodePen Pro">
+    <meta property="og:title" content="${project.projectName}">
+    <meta property="og:description" content="Проект создан в CodePen Pro">
+    ${libTag}
+    <style>${css}</style>
+</head>
+<body>
+    ${html}
+    <script>${js}</script>
+    <script>
+        console.log('Создано в CodePen Pro');
+        console.log('Просмотров: ${(project.views as number) + 1}');
+    </script>
+</body>
+</html>`;
+
+    return c.html(htmlPage);
   } catch (error) {
     console.error('Ошибка в /:id:', error);
     return c.text('Внутренняя ошибка сервера', 500);
