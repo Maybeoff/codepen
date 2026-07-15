@@ -348,7 +348,7 @@ app.get('/:id', async (c) => {
     ).bind(id).run();
 
     const fullscreen = c.req.query('fullscreen');
-    const editorUrl = `https://maybeyoou.ru/codepen/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
+    const editorUrl = `https://maybe.su/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
 
     return c.redirect(editorUrl, 302);
   } catch (error) {
