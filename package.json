@@ -20,7 +20,7 @@
     "css",
     "javascript"
   ],
-  "author": "CodePen Pro Team",
+  "author": "CodePen Pro Team <codepen@example.com>",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.3.3",
