@@ -345,7 +345,7 @@ app.get('/:id', async (c) => {
     // Если ?edit — редирект в редактор
     if (c.req.query('edit')) {
       const fullscreen = c.req.query('fullscreen');
-      const editorUrl = `https://maybe.su/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
+      const editorUrl = `https://maybe.su/codepen/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
       return c.redirect(editorUrl, 302);
     }
 
