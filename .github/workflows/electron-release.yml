@@ -1,0 +1,79 @@
+name: electron-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag'
+        required: true
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: electron
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npx electron-builder --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: win
+          path: dist/*.exe
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS'
+        with:
+          name: mac
+          path: dist/*.dmg
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: linux
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: electron
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+      - name: AI Notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMITS=$(git log --oneline -30)
+          echo "$COMMITS" > /tmp/commits.txt
+          jq -n --arg c "$(cat /tmp/commits.txt)" --arg v "${{ github.event.inputs.version }}" \
+            '{model:"gpt-4o-mini",messages:[{role:"system",content:"Напиши заметки к релизу на русском в Markdown с эмодзи."},{role:"user",content:"Коммиты для \($v):\n\n\($c)"}],temperature:0.7,max_tokens:1000}' > /tmp/p.json
+          R=$(curl -s "https://models.inference.ai.azure.com/chat/completions" -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/json" -d @/tmp/p.json)
+          N=$(echo "$R" | jq -r '.choices[0].message.content // empty')
+          [ -z "$N" ] && N="- Обновление приложения"
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$N" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: CodePen Pro ${{ github.event.inputs.version }}
+          body: ${{ steps.notes.outputs.body }}
+          files: |
+            win/*
+            mac/*
+            linux/*
