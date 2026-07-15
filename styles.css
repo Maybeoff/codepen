@@ -683,9 +683,11 @@ button:focus {
 #policy-modal .setting-item label {
     font-size: 14px;
     line-height: 1.6;
+    white-space: nowrap;
 }
 
-#policy-modal .setting-item a {
+#policy-modal .setting-item label a {
+    white-space: nowrap;
     color: #667eea;
     text-decoration: underline;
 }
