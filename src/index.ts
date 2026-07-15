@@ -80,7 +80,7 @@ app.post('/api/create', async (c) => {
     return c.json({
       success: true,
       id: id,
-      url: `https://codepen.fem-boy.ru/${id}`
+      url: `https://codepen-api.maybeyoou.workers.dev/${id}`
     });
   } catch (error) {
     console.error('Ошибка создания проекта:', error);
@@ -88,7 +88,7 @@ app.post('/api/create', async (c) => {
   }
 });
 
-// 2. Получение информации о проекте (JSON)
+// 2. Получение полных данных проекта (для редактора)
 app.get('/api/project/:id', async (c) => {
   try {
     const id = c.req.param('id');
@@ -101,6 +101,11 @@ app.get('/api/project/:id', async (c) => {
       return c.json({ success: false, error: 'Проект не найден' }, 404);
     }
 
+    const html = await c.env.FILES.get(`project:${id}:html`) || '';
+    const css = await c.env.FILES.get(`project:${id}:css`) || '';
+    const js = await c.env.FILES.get(`project:${id}:js`) || '';
+    const library = await c.env.FILES.get(`project:${id}:library`) || '';
+
     return c.json({
       success: true,
       project: {
@@ -110,10 +115,7 @@ app.get('/api/project/:id', async (c) => {
         views: project.views,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
-        hasHtml: !!project.html,
-        hasCss: !!project.css,
-        hasJs: !!project.js,
-        hasLibrary: !!project.library
+        html, css, js, library
       }
     });
   } catch (error) {
@@ -266,7 +268,7 @@ app.get('/api/export/:id', async (c) => {
 </body>
 </html>`;
 
-    const readme = `# ${project.projectName}\n\nСоздано в CodePen Pro\nID: ${project.id}\nURL: https://codepen.fem-boy.ru/${project.id}`;
+    const readme = `# ${project.projectName}\n\nСоздано в CodePen Pro\nID: ${project.id}\nURL: https://codepen-api.maybeyoou.workers.dev/${project.id}`;
 
     // For Workers, we return a simple JSON with files
     // ZIP creation needs to be done client-side or with a different approach
@@ -306,7 +308,7 @@ app.get('/api/stats', async (c) => {
   }
 });
 
-// 8. Просмотр проекта (HTML страница)
+// 8. Просмотр проекта — редирект в редактор
 app.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
@@ -345,39 +347,10 @@ app.get('/:id', async (c) => {
       `UPDATE projects SET views = views + 1 WHERE id = ?`
     ).bind(id).run();
 
-    let libTag = '';
-    if (project.library) {
-      if ((project.library as string).includes('.css')) {
-        libTag = `<link rel="stylesheet" href="${project.library}">`;
-      } else {
-        libTag = `<script src="${project.library}"></script>`;
-      }
-    }
+    const fullscreen = c.req.query('fullscreen');
+    const editorUrl = `https://maybeyoou.ru/codepen/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
 
-    const htmlPage = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${project.projectName} - CodePen Pro</title>
-    <meta name="description" content="Проект создан в CodePen Pro">
-    <meta property="og:title" content="${project.projectName}">
-    <meta property="og:description" content="Проект создан в CodePen Pro">
-    ${libTag}
-    <style>${project.css}</style>
-</head>
-<body>
-    ${project.html}
-    <script>${project.js}</script>
-    <script>
-        console.log('🚀 Создано в CodePen Pro');
-        console.log('📊 Просмотров: ${(project.views as number) + 1}');
-        console.log('🔗 https://codepen.fem-boy.ru/${project.id}');
-    </script>
-</body>
-</html>`;
-
-    return c.html(htmlPage);
+    return c.redirect(editorUrl, 302);
   } catch (error) {
     console.error('Ошибка в /:id:', error);
     return c.text('Внутренняя ошибка сервера', 500);
