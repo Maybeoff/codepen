@@ -4,6 +4,7 @@ compatibility_date = "2024-01-01"
 
 [vars]
 ENVIRONMENT = "production"
+JWT_SECRET = "codepen_pro_jwt_secret_2024_v1_x9k2m5"
 
 # D1 Database
 [[d1_databases]]

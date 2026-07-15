@@ -5,6 +5,7 @@ type Bindings = {
   DB: D1Database;
   FILES: KVNamespace;
   ENVIRONMENT: string;
+  JWT_SECRET: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -13,6 +14,44 @@ app.use('/*', cors());
 
 const MAX_SIZE = 1024 * 1024;
 const MAX_PROJECT_NAME_LENGTH = 100;
+
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + 'codepen_pro_salt_v1');
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  const passwordHash = await hashPassword(password);
+  return passwordHash === hash;
+}
+
+function generateToken(userId: number, secret: string): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = btoa(JSON.stringify({ userId, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 }));
+  const data = `${header}.${payload}`;
+  const encoder = new TextEncoder();
+  return `${data}`;
+}
+
+function verifyToken(token: string): { userId: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload.exp < Date.now()) return null;
+    return { userId: payload.userId };
+  } catch {
+    return null;
+  }
+}
+
+async function getUser(c: any): Promise<{ userId: number } | null> {
+  const auth = c.req.header('Authorization');
+  if (!auth || !auth.startsWith('Bearer ')) return null;
+  return verifyToken(auth.slice(7));
+}
 
 function generateId(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -41,6 +80,237 @@ function validateProject(data: { html?: string; css?: string; js?: string; proje
 
   return { valid: true };
 }
+
+// ==================== AUTH ====================
+
+// Регистрация
+app.post('/api/auth/register', async (c) => {
+  try {
+    const { username, email, password } = await c.req.json();
+
+    if (!username || !email || !password) {
+      return c.json({ success: false, error: 'Заполните все поля' }, 400);
+    }
+
+    if (username.length < 3 || username.length > 30) {
+      return c.json({ success: false, error: 'Логин: 3-30 символов' }, 400);
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return c.json({ success: false, error: 'Логин: только латиница, цифры и _' }, 400);
+    }
+
+    if (!email.includes('@') || email.length > 100) {
+      return c.json({ success: false, error: 'Некорректный email' }, 400);
+    }
+
+    if (password.length < 6) {
+      return c.json({ success: false, error: 'Пароль: минимум 6 символов' }, 400);
+    }
+
+    const existing = await c.env.DB.prepare(
+      `SELECT id FROM users WHERE username = ? OR email = ?`
+    ).bind(username, email).first();
+
+    if (existing) {
+      return c.json({ success: false, error: 'Логин или email уже заняты' }, 400);
+    }
+
+    const passwordHash = await hashPassword(password);
+    const now = new Date().toISOString();
+
+    const result = await c.env.DB.prepare(
+      `INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)`
+    ).bind(username, email, passwordHash, now).run();
+
+    const userId = result.meta.last_row_id;
+    const token = generateToken(userId as number, c.env.JWT_SECRET);
+
+    return c.json({
+      success: true,
+      token,
+      user: { id: userId, username, email }
+    });
+  } catch (error) {
+    console.error('Ошибка регистрации:', error);
+    return c.json({ success: false, error: 'Внутренняя ошибка сервера' }, 500);
+  }
+});
+
+// Вход
+app.post('/api/auth/login', async (c) => {
+  try {
+    const { login, password } = await c.req.json();
+
+    if (!login || !password) {
+      return c.json({ success: false, error: 'Заполните все поля' }, 400);
+    }
+
+    const user = await c.env.DB.prepare(
+      `SELECT * FROM users WHERE username = ? OR email = ?`
+    ).bind(login, login).first();
+
+    if (!user) {
+      return c.json({ success: false, error: 'Неверный логин/email или пароль' }, 400);
+    }
+
+    const valid = await verifyPassword(password, user.password_hash as string);
+    if (!valid) {
+      return c.json({ success: false, error: 'Неверный логин/email или пароль' }, 400);
+    }
+
+    const token = generateToken(user.id as number, c.env.JWT_SECRET);
+
+    return c.json({
+      success: true,
+      token,
+      user: { id: user.id, username: user.username, email: user.email }
+    });
+  } catch (error) {
+    console.error('Ошибка входа:', error);
+    return c.json({ success: false, error: 'Внутренняя ошибка сервера' }, 500);
+  }
+});
+
+// Текущий пользователь
+app.get('/api/auth/me', async (c) => {
+  const authUser = await getUser(c);
+  if (!authUser) {
+    return c.json({ success: false, error: 'Не авторизован' }, 401);
+  }
+
+  const user = await c.env.DB.prepare(
+    `SELECT id, username, email, created_at FROM users WHERE id = ?`
+  ).bind(authUser.userId).first();
+
+  if (!user) {
+    return c.json({ success: false, error: 'Пользователь не найден' }, 404);
+  }
+
+  return c.json({ success: true, user });
+});
+
+// ==================== USER PROJECTS ====================
+
+// Список проектов пользователя
+app.get('/api/user/projects', async (c) => {
+  const authUser = await getUser(c);
+  if (!authUser) {
+    return c.json({ success: false, error: 'Не авторизован' }, 401);
+  }
+
+  const projects = await c.env.DB.prepare(
+    `SELECT id, name, created_at, updated_at FROM user_projects WHERE user_id = ? ORDER BY updated_at DESC`
+  ).bind(authUser.userId).all();
+
+  return c.json({ success: true, projects: projects.results });
+});
+
+// Создание проекта
+app.post('/api/user/projects', async (c) => {
+  const authUser = await getUser(c);
+  if (!authUser) {
+    return c.json({ success: false, error: 'Не авторизован' }, 401);
+  }
+
+  const { name, html, css, js, library } = await c.req.json();
+
+  if (!name) {
+    return c.json({ success: false, error: 'Укажите название' }, 400);
+  }
+
+  const now = new Date().toISOString();
+
+  const result = await c.env.DB.prepare(
+    `INSERT INTO user_projects (user_id, name, html, css, js, library, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(authUser.userId, name, html || '', css || '', js || '', library || '', now, now).run();
+
+  return c.json({ success: true, id: result.meta.last_row_id });
+});
+
+// Обновление проекта
+app.put('/api/user/projects/:id', async (c) => {
+  const authUser = await getUser(c);
+  if (!authUser) {
+    return c.json({ success: false, error: 'Не авторизован' }, 401);
+  }
+
+  const projectId = c.req.param('id');
+  const { name, html, css, js, library } = await c.req.json();
+
+  const existing = await c.env.DB.prepare(
+    `SELECT id FROM user_projects WHERE id = ? AND user_id = ?`
+  ).bind(projectId, authUser.userId).first();
+
+  if (!existing) {
+    return c.json({ success: false, error: 'Проект не найден' }, 404);
+  }
+
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+  if (html !== undefined) { updates.push('html = ?'); values.push(html); }
+  if (css !== undefined) { updates.push('css = ?'); values.push(css); }
+  if (js !== undefined) { updates.push('js = ?'); values.push(js); }
+  if (library !== undefined) { updates.push('library = ?'); values.push(library); }
+
+  if (updates.length === 0) {
+    return c.json({ success: false, error: 'Нечего обновлять' }, 400);
+  }
+
+  updates.push('updated_at = ?');
+  values.push(new Date().toISOString());
+  values.push(projectId);
+
+  await c.env.DB.prepare(
+    `UPDATE user_projects SET ${updates.join(', ')} WHERE id = ?`
+  ).bind(...values).run();
+
+  return c.json({ success: true });
+});
+
+// Получение проекта
+app.get('/api/user/projects/:id', async (c) => {
+  const authUser = await getUser(c);
+  if (!authUser) {
+    return c.json({ success: false, error: 'Не авторизован' }, 401);
+  }
+
+  const projectId = c.req.param('id');
+
+  const project = await c.env.DB.prepare(
+    `SELECT * FROM user_projects WHERE id = ? AND user_id = ?`
+  ).bind(projectId, authUser.userId).first();
+
+  if (!project) {
+    return c.json({ success: false, error: 'Проект не найден' }, 404);
+  }
+
+  return c.json({ success: true, project });
+});
+
+// Удаление проекта
+app.delete('/api/user/projects/:id', async (c) => {
+  const authUser = await getUser(c);
+  if (!authUser) {
+    return c.json({ success: false, error: 'Не авторизован' }, 401);
+  }
+
+  const projectId = c.req.param('id');
+
+  const result = await c.env.DB.prepare(
+    `DELETE FROM user_projects WHERE id = ? AND user_id = ?`
+  ).bind(projectId, authUser.userId).run();
+
+  if (result.meta.changes === 0) {
+    return c.json({ success: false, error: 'Проект не найден' }, 404);
+  }
+
+  return c.json({ success: true });
+});
+
+// ==================== PUBLIC API ====================
 
 // 1. Создание проекта
 app.post('/api/create', async (c) => {
