@@ -1177,6 +1177,75 @@ function initializeEventListeners() {
         }
     });
 
+    document.getElementById('modal-share-raw-btn').addEventListener('click', async () => {
+        try {
+            saveCurrentProject();
+            const libraryValue = localStorage.getItem('codepen-library') || '';
+            const projectData = {
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue,
+                projectName: projects[currentProject]?.name || 'Project'
+            };
+            showToast('Saving project...', 'info');
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+            const result = await safeJsonParse(response);
+            if (result.success) {
+                const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
+                navigator.clipboard.writeText(rawUrl)
+                    .then(() => showToast('Raw link copied!', 'success'))
+                    .catch(() => showToast('Raw link: ' + rawUrl, 'success'));
+            } else {
+                showToast('Error: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } catch (error) {
+            showToast('Network error: ' + error.message, 'error');
+        }
+    });
+
+    document.getElementById('modal-update-raw-btn').addEventListener('click', async () => {
+        try {
+            saveCurrentProject();
+            const libraryValue = localStorage.getItem('codepen-library') || '';
+            const projectData = {
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue,
+                projectName: projects[currentProject]?.name || 'Project'
+            };
+            showToast('Updating project...', 'info');
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+            const result = await safeJsonParse(response);
+            if (result.success) {
+                const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
+                navigator.clipboard.writeText(rawUrl)
+                    .then(() => showToast('Raw link updated and copied!', 'success'))
+                    .catch(() => showToast('Raw link: ' + rawUrl, 'success'));
+            } else {
+                showToast('Error: ' + (result.error || 'Unknown error'), 'error');
+            }
+        } catch (error) {
+            showToast('Network error: ' + error.message, 'error');
+        }
+    });
+
+    document.getElementById('modal-qr-btn').addEventListener('click', openQRModal);
+    document.getElementById('close-qr-modal').addEventListener('click', closeQRModal);
+    document.getElementById('qr-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'qr-modal') closeQRModal();
+    });
+    document.getElementById('download-qr-btn').addEventListener('click', downloadQRCode);
+
     document.getElementById('clear-console').addEventListener('click', () => {
         document.getElementById('console').innerHTML = '';
         showToast('Консоль очищена', 'info');
@@ -1461,4 +1530,105 @@ setTimeout(() => {
         }
     }
 }, 2000);
+
+function openQRModal() {
+    const modal = document.getElementById('qr-modal');
+    const projectName = projects[currentProject]?.name || 'Project';
+    document.getElementById('qr-project-name').value = projectName;
+    document.getElementById('qr-project-url').value = 'Creating link...';
+    document.getElementById('qr-code-display').innerHTML = '';
+    document.getElementById('download-qr-btn').style.display = 'none';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    const projectData = {
+        html: editors.html.getValue(),
+        css: editors.css.getValue(),
+        js: editors.js.getValue(),
+        library: libraryValue,
+        projectName: projectName
+    };
+
+    fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            const url = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
+            document.getElementById('qr-project-url').value = url;
+            return generateQRCodeFromUrl(url);
+        } else {
+            throw new Error(result.error || 'Failed to create link');
+        }
+    })
+    .catch(err => {
+        document.getElementById('qr-project-url').value = 'Error: ' + err.message;
+        showToast('Error: ' + err.message, 'error');
+    });
+}
+
+function closeQRModal() {
+    const modal = document.getElementById('qr-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+async function generateQRCodeFromUrl(url) {
+    const qrDisplay = document.getElementById('qr-code-display');
+    const qrLoading = document.getElementById('qr-loading');
+    const downloadBtn = document.getElementById('download-qr-btn');
+
+    try {
+        qrDisplay.innerHTML = '';
+        qrLoading.style.display = 'flex';
+        const encodedUrl = encodeURIComponent(url);
+        const qrApiUrl = `https://public-api.qr-code-generator.com/v1/create/free?image_format=SVG&image_width=500&foreground_color=%23000000&frame_color=%23000000&frame_name=no-frame&qr_code_logo=&qr_code_pattern=&qr_code_text=${encodedUrl}`;
+        const response = await fetch(qrApiUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const svgText = await response.text();
+        qrLoading.style.display = 'none';
+        qrDisplay.innerHTML = svgText;
+        const svgElement = qrDisplay.querySelector('svg');
+        if (svgElement) {
+            svgElement.removeAttribute('width');
+            svgElement.removeAttribute('height');
+            if (!svgElement.getAttribute('viewBox')) {
+                svgElement.setAttribute('viewBox', '0 0 500 500');
+            }
+            svgElement.style.width = '100%';
+            svgElement.style.height = '100%';
+            svgElement.style.display = 'block';
+        }
+        downloadBtn.style.display = 'inline-flex';
+    } catch (error) {
+        qrLoading.style.display = 'none';
+        qrDisplay.innerHTML = '<p style="color:red;">Error generating QR code: ' + error.message + '</p>';
+        showToast('QR error: ' + error.message, 'error');
+    }
+}
+
+function downloadQRCode() {
+    const qrDisplay = document.getElementById('qr-code-display');
+    const svgElement = qrDisplay.querySelector('svg');
+    if (!svgElement) {
+        showToast('QR code not found', 'error');
+        return;
+    }
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = (projects[currentProject]?.name || 'project') + '-qr.svg';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
+    showToast('QR code downloaded!', 'success');
+}
 
