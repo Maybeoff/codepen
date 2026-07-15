@@ -190,6 +190,44 @@ app.get('/api/auth/me', async (c) => {
   return c.json({ success: true, user });
 });
 
+// Смена пароля
+app.put('/api/auth/password', async (c) => {
+  const authUser = await getUser(c);
+  if (!authUser) {
+    return c.json({ success: false, error: 'Не авторизован' }, 401);
+  }
+
+  const { currentPassword, newPassword } = await c.req.json();
+
+  if (!currentPassword || !newPassword) {
+    return c.json({ success: false, error: 'Заполните оба поля' }, 400);
+  }
+
+  if (newPassword.length < 6) {
+    return c.json({ success: false, error: 'Новый пароль: минимум 6 символов' }, 400);
+  }
+
+  const user = await c.env.DB.prepare(
+    `SELECT password_hash FROM users WHERE id = ?`
+  ).bind(authUser.userId).first();
+
+  if (!user) {
+    return c.json({ success: false, error: 'Пользователь не найден' }, 404);
+  }
+
+  const valid = await verifyPassword(currentPassword, user.password_hash as string);
+  if (!valid) {
+    return c.json({ success: false, error: 'Неверный текущий пароль' }, 400);
+  }
+
+  const newHash = await hashPassword(newPassword);
+  await c.env.DB.prepare(
+    `UPDATE users SET password_hash = ? WHERE id = ?`
+  ).bind(newHash, authUser.userId).run();
+
+  return c.json({ success: true, message: 'Пароль изменён' });
+});
+
 // ==================== USER PROJECTS ====================
 
 // Список проектов пользователя
