@@ -194,19 +194,6 @@
                         <button id="modal-import-btn" class="settings-btn primary">📥 Импорт из ZIP</button>
                         <button id="modal-share-btn" class="settings-btn primary">🔗 Поделиться</button>
                         <button id="modal-share-fullscreen-btn" class="settings-btn primary">🖥️ Поделиться (полный экран)</button>
-                        <button id="modal-share-raw-btn" class="settings-btn primary">📄 Поделиться (чистый HTML)</button>
-                        <button id="modal-update-raw-btn" class="settings-btn primary">🔄 Обновить Raw ссылку</button>
-                        <button id="modal-qr-btn" class="settings-btn primary">📱 QR-код</button>
-                    </div>
-                </div>
-
-                <div class="settings-section">
-                    <h3>🔗 Короткие ссылки</h3>
-                    <div class="setting-item project-buttons">
-                        <button id="modal-create-link-btn" class="settings-btn success">🔗 Создать ссылку</button>
-                        <button id="modal-create-raw-link-btn" class="settings-btn success">📄 Создать Raw ссылку</button>
-                        <button id="modal-view-links-btn" class="settings-btn primary">📋 Мои ссылки</button>
-                        <button id="modal-update-link-btn" class="settings-btn primary">🔄 Обновить ссылку</button>
                     </div>
                 </div>
             </div>
@@ -254,91 +241,6 @@
             <button id="exit-fullscreen">✕ Exit</button>
         </div>
         <iframe id="fullscreen-preview"></iframe>
-    </div>
-
-    <!-- QR Code Modal -->
-    <div id="qr-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>📱 QR-код проекта</h2>
-                <button id="close-qr-modal" class="close-btn">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="settings-section">
-                    <div class="setting-item">
-                        <label>Название проекта:</label>
-                        <input type="text" id="qr-project-name" readonly>
-                    </div>
-                    <div class="setting-item">
-                        <label>URL проекта:</label>
-                        <textarea id="qr-project-url" rows="3" readonly></textarea>
-                    </div>
-                    <div class="qr-code-container">
-                        <div id="qr-code-display"></div>
-                        <div id="qr-loading" style="display: none;">
-                            <p>Генерация QR-кода...</p>
-                        </div>
-                    </div>
-                    <div class="setting-item project-buttons">
-                        <button id="generate-qr-btn" class="settings-btn success">🖥️ QR полный экран</button>
-                        <button id="generate-raw-qr-btn" class="settings-btn success">📄 QR Raw HTML</button>
-                        <button id="download-qr-btn" class="settings-btn primary" style="display: none;">💾 Скачать QR-код</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Short Link Management Modal -->
-    <div id="link-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="link-modal-title">🔗 Управление короткими ссылками</h2>
-                <button id="close-link-modal" class="close-btn">✕</button>
-            </div>
-            <div class="modal-body">
-                <!-- Создание новой ссылки -->
-                <div id="create-link-section" class="settings-section">
-                    <h3>Создать новую ссылку</h3>
-                    <div class="setting-item">
-                        <label>Название проекта:</label>
-                        <input type="text" id="current-project-name" readonly>
-                    </div>
-                    <div class="setting-item">
-                        <label>URL проекта:</label>
-                        <textarea id="project-url" rows="3" readonly></textarea>
-                    </div>
-                    <div class="setting-item project-buttons">
-                        <button id="create-short-link" class="settings-btn success">� Со здать короткую ссылку</button>
-                    </div>
-                </div>
-
-                <!-- Просмотр сохраненных ссылок -->
-                <div id="view-links-section" class="settings-section" style="display: none;">
-                    <h3>Ваши короткие ссылки</h3>
-                    <div id="saved-links-list"></div>
-                </div>
-
-                <!-- Обновление ссылки -->
-                <div id="edit-link-section" class="settings-section" style="display: none;">
-                    <h3>Обновить ссылку проекта</h3>
-                    <div class="setting-item">
-                        <label>Текущая ссылка проекта:</label>
-                        <input type="text" id="current-project-link" readonly>
-                    </div>
-                    <div class="setting-item project-buttons">
-                        <button id="update-project-link" class="settings-btn success">🔄 Обновить ссылку проекта</button>
-                        <button id="delete-project-link" class="settings-btn danger">🗑 Удалить ссылку</button>
-                    </div>
-                </div>
-
-                <!-- Результат -->
-                <div class="settings-section">
-                    <h3>Результат</h3>
-                    <div id="link-result" class="link-result"></div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Custom Prompt Modal -->
