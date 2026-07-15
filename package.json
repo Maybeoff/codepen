@@ -50,11 +50,13 @@
     },
     "mac": {
       "target": "dmg",
+      "icon": "icons/icon-512.png",
       "category": "public.app-category.developer-tools",
       "hardenedRuntime": false
     },
     "linux": {
       "target": ["AppImage", "deb"],
+      "icon": "icons/icon-512.png",
       "category": "Development"
     }
   }
