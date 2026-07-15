@@ -18,9 +18,9 @@
   "author": "CodePen Pro Team",
   "license": "MIT",
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240117.0",
+    "@cloudflare/workers-types": "^5.20260714.1",
     "hono": "^4.0.0",
     "typescript": "^5.3.3",
-    "wrangler": "^3.114.17"
+    "wrangler": "^4.110.0"
   }
 }
