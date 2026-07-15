@@ -5,6 +5,8 @@ let projects = {};
 let isResizing = false;
 let globalTheme = 'light';
 let injectThemeCSS = false;
+let isLoadedFromURL = false;
+let loadedProjectId = null;
 
 // Theme CSS templates
 const themeCSSTemplates = {
@@ -642,6 +644,33 @@ function saveCurrentProject() {
     saveProjects();
 }
 
+function saveLoadedProject() {
+    if (!editors || !editors.html || !editors.css || !editors.js) return;
+
+    const name = prompt('Под каким именем сохранить проект?');
+    if (!name) return;
+
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    const key = 'project_' + Date.now();
+    projects[key] = {
+        name: name,
+        html: editors.html.getValue(),
+        css: editors.css.getValue(),
+        js: editors.js.getValue(),
+        library: libraryValue
+    };
+
+    currentProject = key;
+    isLoadedFromURL = false;
+    loadedProjectId = null;
+    const saveBtn = document.getElementById('save-loaded-btn');
+    if (saveBtn) saveBtn.style.display = 'none';
+    saveProjects();
+    updateProjectSelect();
+    updateModalProjectSelect();
+    showToast('Проект "' + name + '" сохранён!', 'success');
+}
+
 function createNewProject() {
     const name = prompt('Название нового проекта:');
     if (!name) return;
@@ -1021,6 +1050,7 @@ function initializeEventListeners() {
     document.getElementById('open-raw-btn').addEventListener('click', openRawInNewTab);
     document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('snow-btn').addEventListener('click', toggleSnowfall);
+    document.getElementById('save-loaded-btn').addEventListener('click', saveLoadedProject);
     document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
 
     // Settings modal events
@@ -1325,14 +1355,21 @@ function loadFromURL() {
             .then(r => r.json())
             .then(result => {
                 if (result.success && result.project) {
-                    if (result.project.html) editors.html.setValue(result.project.html);
-                    if (result.project.css) editors.css.setValue(result.project.css);
-                    if (result.project.js) editors.js.setValue(result.project.js);
+                    isLoadedFromURL = true;
+                    loadedProjectId = loadId;
+                    const saveBtn = document.getElementById('save-loaded-btn');
+                    if (saveBtn) saveBtn.style.display = 'inline-block';
+                    const editors_html = document.getElementById('editors-html');
+                    const editors_css = document.getElementById('editors-css');
+                    const editors_js = document.getElementById('editors-js');
+                    if (editors.html && result.project.html) editors.html.setValue(result.project.html);
+                    if (editors.css && result.project.css) editors.css.setValue(result.project.css);
+                    if (editors.js && result.project.js) editors.js.setValue(result.project.js);
                     if (result.project.library) {
                         const ls = document.getElementById('library-select');
                         if (ls) ls.value = result.project.library;
                     }
-                    showToast('Проект загружен!', 'success');
+                    showToast('Проект загружен! Нажмите "Сохранить как", чтобы сохранить.', 'success');
                 } else {
                     showToast('Проект не найден', 'error');
                 }
@@ -1344,10 +1381,12 @@ function loadFromURL() {
         try {
             const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
             const project = JSON.parse(decompressed);
-
-            if (project.h !== undefined) editors.html.setValue(project.h);
-            if (project.c !== undefined) editors.css.setValue(project.c);
-            if (project.j !== undefined) editors.js.setValue(project.j);
+            isLoadedFromURL = true;
+            const saveBtn = document.getElementById('save-loaded-btn');
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+            if (project.h !== undefined && editors.html) editors.html.setValue(project.h);
+            if (project.c !== undefined && editors.css) editors.css.setValue(project.c);
+            if (project.j !== undefined && editors.js) editors.js.setValue(project.j);
             if (project.l !== undefined) {
                 const librarySelect = document.getElementById('library-select');
                 if (librarySelect) {
@@ -1355,7 +1394,7 @@ function loadFromURL() {
                 }
             }
             
-            showToast('Проект загружен из ссылки!', 'success');
+            showToast('Проект загружен из ссылки! Нажмите "Сохранить как", чтобы сохранить.', 'success');
         } catch (e) {
             showToast('Ошибка при загрузке из ссылки', 'error');
         }
@@ -1364,7 +1403,7 @@ function loadFromURL() {
     if (fullscreenMode) {
         setTimeout(() => {
             toggleFullscreen();
-            showToast('Открыто в полноэкранном режиме 🖥️', 'info');
+            showToast('Открыто в полноэкранном режиме', 'info');
         }, 1000);
     }
 }
