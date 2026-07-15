@@ -61,7 +61,42 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: electron
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v4
+
+      - name: Generate release notes with AI
+        id: ai-notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMITS=$(git log --oneline -30)
+          
+          NOTES=$(curl -s "https://models.inference.ai.azure.com/chat/completions" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "gpt-4o-mini",
+              "messages": [
+                {
+                  "role": "system",
+                  "content": "Ты — разработчик. Напиши красивые заметки к релизу приложения на русском языке. Формат: Markdown. Используй эмодзи. Кратко опиши что нового. Не пиши заголовок — он уже есть."
+                },
+                {
+                  "role": "user",
+                  "content": "Вот коммиты для релиза '"${{ github.event.inputs.version }}"':\n\n'"$COMMITS"'" 
+                }
+              ],
+              "temperature": 0.7,
+              "max_tokens": 1000
+            }' | jq -r '.choices[0].message.content')
+          
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -70,7 +105,7 @@ jobs:
           name: CodePen Pro ${{ github.event.inputs.version }}
           draft: false
           prerelease: false
-          generate_release_notes: true
+          body: ${{ steps.ai-notes.outputs.notes }}
           files: |
             windows-build/*
             mac-build/*
