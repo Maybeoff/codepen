@@ -1134,7 +1134,7 @@ function initializeEventListeners() {
             });
             const result = await safeJsonParse(response);
             if (result.success) {
-                const shareUrl = `https://maybe.su/?load=${result.id}`;
+                const shareUrl = `https://maybe.su/codepen/?load=${result.id}`;
                 navigator.clipboard.writeText(shareUrl)
                     .then(() => showToast('Ссылка скопирована!', 'success'))
                     .catch(() => showToast('Ссылка: ' + shareUrl, 'success'));
@@ -1165,7 +1165,7 @@ function initializeEventListeners() {
             });
             const result = await safeJsonParse(response);
             if (result.success) {
-                const shareUrl = `https://maybe.su/?load=${result.id}&fullscreen`;
+                const shareUrl = `https://maybe.su/codepen/?load=${result.id}&fullscreen`;
                 navigator.clipboard.writeText(shareUrl)
                     .then(() => showToast('Ссылка скопирована!', 'success'))
                     .catch(() => showToast('Ссылка: ' + shareUrl, 'success'));
