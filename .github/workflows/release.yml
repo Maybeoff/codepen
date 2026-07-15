@@ -75,10 +75,12 @@ jobs:
         run: |
           COMMITS=$(git log --oneline -30)
           
-          NOTES=$(curl -s "https://models.inference.ai.azure.com/chat/completions" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{
+          echo "$COMMITS" > /tmp/commits.txt
+          
+          jq -n \
+            --arg commits "$(cat /tmp/commits.txt)" \
+            --arg version "${{ github.event.inputs.version }}" \
+            '{
               "model": "gpt-4o-mini",
               "messages": [
                 {
@@ -87,12 +89,33 @@ jobs:
                 },
                 {
                   "role": "user",
-                  "content": "Вот коммиты для релиза '"${{ github.event.inputs.version }}"':\n\n'"$COMMITS"'" 
+                  "content": "Вот коммиты для релиза \($version):\n\n\($commits)"
                 }
               ],
               "temperature": 0.7,
               "max_tokens": 1000
-            }' | jq -r '.choices[0].message.content')
+            }' > /tmp/payload.json
+          
+          RESPONSE=$(curl -s "https://models.inference.ai.azure.com/chat/completions" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/payload.json)
+          
+          echo "API response: $RESPONSE" > /tmp/response.txt
+          
+          NOTES=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+          
+          if [ -z "$NOTES" ]; then
+            NOTES="## Что нового в ${{ github.event.inputs.version }}
+
+### Основные изменения
+- Обновление фронтенда и бэкенда
+- Исправление ошибок и улучшение стабильности
+
+### Технические детали
+- Сборка для Windows, macOS и Linux
+- Автоматическая сборка через GitHub Actions"
+          fi
           
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
