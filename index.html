@@ -18,12 +18,12 @@
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/icon-192.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/solarized.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css">
+    <link rel="stylesheet" href="lib/codemirror/codemirror.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/dracula.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/monokai.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/material.min.css">
+    <link rel="stylesheet" href="lib/codemirror/theme/solarized.min.css">
+    <link rel="stylesheet" href="lib/codemirror/addon/show-hint.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -35,6 +35,8 @@
             <button id="fullscreen-btn" title="Полный экран превью">⛶ Fullscreen</button>
             <button id="open-raw-btn" title="Открыть Raw в новой вкладке">📄 Raw</button>
             <button id="snow-btn" title="Включить/выключить снегопад">❄️ Snow</button>
+            <button id="save-loaded-btn" title="Сохранить загруженный проект" style="display: none;">💾 Сохранить как</button>
+            <button id="auth-btn" title="Войти / Регистрация">👤 Войти</button>
             <button id="settings-btn" title="Настройки">⚙️ Настройки</button>
         </div>
     </header>
@@ -82,34 +84,35 @@
             </div>
         </div>
     </main>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/html-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/css-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/javascript-hint.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closetag.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/xml-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/indent-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/comment-fold.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/searchcursor.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/jump-to-line.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/standalone.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-html.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-postcss.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.0/parser-babel.min.js"></script>
+    <script src="lib/lz-string.min.js"></script>
+    <script src="lib/jszip.min.js"></script>
+    <script src="lib/codemirror/codemirror.min.js"></script>
+    <script src="lib/codemirror/mode/xml.min.js"></script>
+    <script src="lib/codemirror/mode/htmlmixed.min.js"></script>
+    <script src="lib/codemirror/mode/css.min.js"></script>
+    <script src="lib/codemirror/mode/javascript.min.js"></script>
+    <script src="lib/codemirror/addon/show-hint.min.js"></script>
+    <script src="lib/codemirror/addon/html-hint.min.js"></script>
+    <script src="lib/codemirror/addon/css-hint.min.js"></script>
+    <script src="lib/codemirror/addon/javascript-hint.min.js"></script>
+    <script src="lib/codemirror/addon/closebrackets.min.js"></script>
+    <script src="lib/codemirror/addon/closetag.min.js"></script>
+    <script src="lib/codemirror/addon/foldcode.min.js"></script>
+    <script src="lib/codemirror/addon/foldgutter.min.js"></script>
+    <script src="lib/codemirror/addon/xml-fold.min.js"></script>
+    <script src="lib/codemirror/addon/indent-fold.min.js"></script>
+    <script src="lib/codemirror/addon/brace-fold.min.js"></script>
+    <script src="lib/codemirror/addon/comment-fold.min.js"></script>
+    <script src="lib/codemirror/addon/search.min.js"></script>
+    <script src="lib/codemirror/addon/searchcursor.min.js"></script>
+    <script src="lib/codemirror/addon/jump-to-line.min.js"></script>
+    <script src="lib/codemirror/addon/dialog.min.js"></script>
+    <link rel="stylesheet" href="lib/codemirror/addon/dialog.min.css">
+    <link rel="stylesheet" href="lib/codemirror/addon/foldgutter.min.css">
+    <script src="lib/prettier-standalone.js"></script>
+    <script src="lib/prettier-parser-html.min.js"></script>
+    <script src="lib/prettier-parser-postcss.min.js"></script>
+    <script src="lib/prettier-parser-babel.min.js"></script>
     <script src="script.js"></script>
     
     <!-- Settings Modal -->
@@ -198,16 +201,6 @@
                         <button id="modal-qr-btn" class="settings-btn primary">📱 QR-код</button>
                     </div>
                 </div>
-
-                <div class="settings-section">
-                    <h3> Короткие ссылки</h3>
-                    <div class="setting-item project-buttons">
-                        <button id="modal-create-link-btn" class="settings-btn success">🔗 Создать ссылку</button>
-                        <button id="modal-create-raw-link-btn" class="settings-btn success">�с Создать Raw ссылку</button>
-                        <button id="modal-view-links-btn" class="settings-btn primary">� МОои ссылки</button>
-                        <button id="modal-update-link-btn" class="settings-btn primary">🔄 Обновить ссылку</button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -279,62 +272,8 @@
                         </div>
                     </div>
                     <div class="setting-item project-buttons">
-                        <button id="generate-qr-btn" class="settings-btn success">🖥️ QR полный экран</button>
-                        <button id="generate-raw-qr-btn" class="settings-btn success">📄 QR Raw HTML</button>
                         <button id="download-qr-btn" class="settings-btn primary" style="display: none;">💾 Скачать QR-код</button>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Short Link Management Modal -->
-    <div id="link-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="link-modal-title">🔗 Управление короткими ссылками</h2>
-                <button id="close-link-modal" class="close-btn">✕</button>
-            </div>
-            <div class="modal-body">
-                <!-- Создание новой ссылки -->
-                <div id="create-link-section" class="settings-section">
-                    <h3>Создать новую ссылку</h3>
-                    <div class="setting-item">
-                        <label>Название проекта:</label>
-                        <input type="text" id="current-project-name" readonly>
-                    </div>
-                    <div class="setting-item">
-                        <label>URL проекта:</label>
-                        <textarea id="project-url" rows="3" readonly></textarea>
-                    </div>
-                    <div class="setting-item project-buttons">
-                        <button id="create-short-link" class="settings-btn success">� Со здать короткую ссылку</button>
-                    </div>
-                </div>
-
-                <!-- Просмотр сохраненных ссылок -->
-                <div id="view-links-section" class="settings-section" style="display: none;">
-                    <h3>Ваши короткие ссылки</h3>
-                    <div id="saved-links-list"></div>
-                </div>
-
-                <!-- Обновление ссылки -->
-                <div id="edit-link-section" class="settings-section" style="display: none;">
-                    <h3>Обновить ссылку проекта</h3>
-                    <div class="setting-item">
-                        <label>Текущая ссылка проекта:</label>
-                        <input type="text" id="current-project-link" readonly>
-                    </div>
-                    <div class="setting-item project-buttons">
-                        <button id="update-project-link" class="settings-btn success">🔄 Обновить ссылку проекта</button>
-                        <button id="delete-project-link" class="settings-btn danger">🗑 Удалить ссылку</button>
-                    </div>
-                </div>
-
-                <!-- Результат -->
-                <div class="settings-section">
-                    <h3>Результат</h3>
-                    <div id="link-result" class="link-result"></div>
                 </div>
             </div>
         </div>
@@ -357,6 +296,130 @@
                         <button id="prompt-modal-ok" class="settings-btn success">OK</button>
                         <button id="prompt-modal-cancel" class="settings-btn">Отмена</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="auth-modal-title">Вход</h2>
+                <button id="close-auth-modal" class="close-btn">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Login Form -->
+                <div id="auth-login-form">
+                    <div class="settings-section">
+                        <h3>Вход</h3>
+                        <div class="setting-item">
+                            <label>Логин или Email:</label>
+                            <input type="text" id="auth-login-input" placeholder="Логин или email">
+                        </div>
+                        <div class="setting-item">
+                            <label>Пароль:</label>
+                            <input type="password" id="auth-login-password" placeholder="Пароль">
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-login-btn" class="settings-btn success">Войти</button>
+                            <button id="auth-show-register" class="settings-btn">Регистрация</button>
+                        </div>
+                        <div id="auth-login-error" class="auth-error" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="auth-register-form" style="display: none;">
+                    <div class="settings-section">
+                        <h3>Регистрация</h3>
+                        <div class="setting-item">
+                            <label>Логин:</label>
+                            <input type="text" id="auth-register-username" placeholder="3-30 символов, латиница и _">
+                        </div>
+                        <div class="setting-item">
+                            <label>Email:</label>
+                            <input type="email" id="auth-register-email" placeholder="email@example.com">
+                        </div>
+                        <div class="setting-item">
+                            <label>Пароль:</label>
+                            <input type="password" id="auth-register-password" placeholder="Минимум 6 символов">
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-register-btn" class="settings-btn success">Зарегистрироваться</button>
+                            <button id="auth-show-login" class="settings-btn">Назад ко входу</button>
+                        </div>
+                        <div id="auth-register-error" class="auth-error" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- User Info (shown when logged in) -->
+                <div id="auth-user-info" style="display: none;">
+                    <div class="settings-section">
+                        <h3>Аккаунт</h3>
+                        <div class="setting-item">
+                            <label>Пользователь:</label>
+                            <span id="auth-username-display"></span>
+                        </div>
+                        <div class="setting-item">
+                            <label>Email:</label>
+                            <span id="auth-email-display"></span>
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-logout-btn" class="settings-btn danger">Выйти</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>🔑 Сменить пароль</h3>
+                        <div class="setting-item">
+                            <label>Новый пароль:</label>
+                            <input type="password" id="auth-new-password" placeholder="Минимум 6 символов">
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-change-password-btn" class="settings-btn primary">Изменить пароль</button>
+                        </div>
+                        <div id="auth-password-error" class="auth-error" style="display: none;"></div>
+                        <div id="auth-password-success" class="auth-success" style="display: none;"></div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>☁️ Облачные проекты</h3>
+                        <div class="setting-item">
+                            <select id="cloud-project-select">
+                                <option value="">-- Выберите проект --</option>
+                            </select>
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="cloud-load-btn" class="settings-btn primary">📥 Загрузить</button>
+                            <button id="cloud-save-btn" class="settings-btn primary">💾 Сохранить</button>
+                            <button id="cloud-save-as-btn" class="settings-btn primary">💾 Сохранить как</button>
+                            <button id="cloud-delete-btn" class="settings-btn danger">🗑 Удалить</button>
+                        </div>
+                        <div class="setting-item">
+                            <label>Название проекта:</label>
+                            <input type="text" id="cloud-project-name" placeholder="Название проекта">
+                        </div>
+                        <div id="cloud-status" class="auth-error" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Policy Modal -->
+    <div id="policy-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📜 Правила использования</h2>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="policy-check">
+                        Я прочитал и принимаю <a href="https://maybe.su/codepen/policy/Terms_of_Service.md" target="_blank">Правила пользования сервисом</a> и <a href="https://maybe.su/codepen/policy/Hosting_&_Publishing_Policy.md" target="_blank">Правила загрузки и публикации проектов</a>
+                    </label>
+                </div>
+                <div class="setting-item project-buttons">
+                    <button id="policy-accept-btn" class="settings-btn success" disabled>Принять и продолжить</button>
                 </div>
             </div>
         </div>

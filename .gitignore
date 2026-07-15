@@ -1,28 +1,39 @@
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# API документация (внутренняя)
+api-examples.md
+
+# IDE настройки
+.vscode/
+.idea/
 
 # Системные файлы
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
+# Логи
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Временные файлы
 *.tmp
 *.temp
 *~
 
-# Логи
-*.log
-
 # Кэш
 .cache/
 .parcel-cache/
 
-# Electron build
+# Зависимости
+node_modules/
+package-lock.json
+yarn.lock
+
+# Сборка десктопного приложения
+codepen-app/dist/
+codepen-app/build/
+codepen-app/node_modules/
+
+# Сборка (если будет добавлена для веб-версии)
 dist/
+build/

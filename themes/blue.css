@@ -118,6 +118,17 @@ body.theme-blue .toast {
     border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Фикс для выпадающего списка в синей теме */
+body.theme-blue select option {
+    background-color: #6366f1 !important; /* Насыщенный синий/индиго без прозрачности */
+    color: white !important;
+}
+
+/* Дополнительно: убираем системный синий фон при наведении в некоторых браузерах */
+body.theme-blue select:focus {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
 /* Blue theme QR modal */
 body.theme-blue .qr-code-container {
     background: rgba(255, 255, 255, 0.1) !important;

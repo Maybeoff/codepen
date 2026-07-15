@@ -599,6 +599,18 @@ button:focus {
     background: #c82333;
 }
 
+.settings-btn:disabled {
+    background: #6c757d !important;
+    color: #adb5bd !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.settings-btn:disabled:hover {
+    background: #6c757d !important;
+    color: #adb5bd !important;
+}
+
 .link-result {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
@@ -656,6 +668,40 @@ button:focus {
     border: 1px solid #dee2e6;
     border-radius: 4px;
     padding: 10px;
+}
+
+.auth-error {
+    background: #fee;
+    color: #c00;
+    border: 1px solid #fcc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.auth-success {
+    background: #efe;
+    color: #060;
+    border: 1px solid #cfc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+#policy-modal .setting-item label {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+#policy-modal .setting-item label a {
+    color: #667eea;
+    text-decoration: underline;
+}
+
+#policy-modal .modal-content {
+    max-width: 800px;
 }
 
 .saved-link-item {

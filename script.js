@@ -5,6 +5,8 @@ let projects = {};
 let isResizing = false;
 let globalTheme = 'light';
 let injectThemeCSS = false;
+let isLoadedFromURL = false;
+let loadedProjectId = null;
 
 // Theme CSS templates
 const themeCSSTemplates = {
@@ -642,6 +644,33 @@ function saveCurrentProject() {
     saveProjects();
 }
 
+function saveLoadedProject() {
+    if (!editors || !editors.html || !editors.css || !editors.js) return;
+
+    const name = prompt('Под каким именем сохранить проект?');
+    if (!name) return;
+
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    const key = 'project_' + Date.now();
+    projects[key] = {
+        name: name,
+        html: editors.html.getValue(),
+        css: editors.css.getValue(),
+        js: editors.js.getValue(),
+        library: libraryValue
+    };
+
+    currentProject = key;
+    isLoadedFromURL = false;
+    loadedProjectId = null;
+    const saveBtn = document.getElementById('save-loaded-btn');
+    if (saveBtn) saveBtn.style.display = 'none';
+    saveProjects();
+    updateProjectSelect();
+    updateModalProjectSelect();
+    showToast('Проект "' + name + '" сохранён!', 'success');
+}
+
 function createNewProject() {
     const name = prompt('Название нового проекта:');
     if (!name) return;
@@ -959,11 +988,21 @@ function initializeResizer() {
     const editorContainer = document.querySelector('.editor-container');
     const previewContainer = document.querySelector('.preview-container');
     const main = document.querySelector('main');
+    const previewIframe = document.getElementById('preview');
     
     resizer.addEventListener('mousedown', (e) => {
         isResizing = true;
         document.body.style.cursor = 'col-resize';
         document.body.style.userSelect = 'none';
+        
+        // ВАЖНО: Отключаем события мыши для фрейма, чтобы он не перехватывал курсор
+        if (previewIframe) {
+            previewIframe.style.pointerEvents = 'none';
+        }
+        
+        // Также используем захват указателя (самый надежный способ)
+        resizer.setPointerCapture(e.pointerId);
+        
         e.preventDefault();
     });
     
@@ -981,11 +1020,21 @@ function initializeResizer() {
         }
     });
     
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', (e) => {
         if (isResizing) {
             isResizing = false;
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
+            
+            // Включаем события мыши обратно
+            if (previewIframe) {
+                previewIframe.style.pointerEvents = 'auto';
+            }
+            
+            // Освобождаем указатель
+            if (resizer.hasPointerCapture(e.pointerId)) {
+                resizer.releasePointerCapture(e.pointerId);
+            }
             
             setTimeout(() => {
                 Object.values(editors).forEach(editor => editor.refresh());
@@ -1001,6 +1050,7 @@ function initializeEventListeners() {
     document.getElementById('open-raw-btn').addEventListener('click', openRawInNewTab);
     document.getElementById('exit-fullscreen').addEventListener('click', toggleFullscreen);
     document.getElementById('snow-btn').addEventListener('click', toggleSnowfall);
+    document.getElementById('save-loaded-btn').addEventListener('click', saveLoadedProject);
     document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
 
     // Settings modal events
@@ -1008,24 +1058,6 @@ function initializeEventListeners() {
     document.getElementById('settings-modal').addEventListener('click', (e) => {
         if (e.target.id === 'settings-modal') closeSettingsModal();
     });
-
-    // Short link modal events
-    document.getElementById('close-link-modal').addEventListener('click', closeShortLinkModal);
-    document.getElementById('link-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'link-modal') closeShortLinkModal();
-    });
-    document.getElementById('create-short-link').addEventListener('click', createShortLink);
-    document.getElementById('update-project-link').addEventListener('click', updateProjectLink);
-    document.getElementById('delete-project-link').addEventListener('click', deleteProjectLink);
-
-    // QR code modal events
-    document.getElementById('close-qr-modal').addEventListener('click', closeQRModal);
-    document.getElementById('qr-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'qr-modal') closeQRModal();
-    });
-    document.getElementById('generate-qr-btn').addEventListener('click', () => createShortLinkForQR('fullscreen'));
-    document.getElementById('generate-raw-qr-btn').addEventListener('click', () => createShortLinkForQR('raw'));
-    document.getElementById('download-qr-btn').addEventListener('click', downloadQRCode);
 
     // Settings controls
     document.getElementById('modal-theme-select').addEventListener('change', (e) => {
@@ -1113,47 +1145,10 @@ function initializeEventListeners() {
     });
     document.getElementById('modal-export-btn').addEventListener('click', exportToZip);
     document.getElementById('modal-import-btn').addEventListener('click', openImportDialog);
-    document.getElementById('modal-share-btn').addEventListener('click', () => {
-        saveCurrentProject();
-        const librarySelect = document.getElementById('library-select');
-        const libraryValue = librarySelect ? librarySelect.value : '';
-        
-        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
-            h: editors.html.getValue(),
-            c: editors.css.getValue(),
-            j: editors.js.getValue(),
-            l: libraryValue
-        }));
-        
-        const url = `${window.location.origin}${window.location.pathname}?data=${compressed}`;
-        navigator.clipboard.writeText(url)
-            .then(() => showToast('Ссылка скопирована!', 'success'))
-            .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
-    });
-
-    document.getElementById('modal-share-fullscreen-btn').addEventListener('click', () => {
-        saveCurrentProject();
-        const librarySelect = document.getElementById('library-select');
-        const libraryValue = librarySelect ? librarySelect.value : '';
-        
-        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
-            h: editors.html.getValue(),
-            c: editors.css.getValue(),
-            j: editors.js.getValue(),
-            l: libraryValue
-        }));
-        
-        const url = `${window.location.origin}${window.location.pathname}?data=${compressed}&fullscreen`;
-        navigator.clipboard.writeText(url)
-            .then(() => showToast('Ссылка с полноэкранным режимом скопирована!', 'success'))
-            .catch(() => showToast('Не удалось скопировать ссылку', 'error'));
-    });
-
-    document.getElementById('modal-share-raw-btn').addEventListener('click', async () => {
+    document.getElementById('modal-share-btn').addEventListener('click', async () => {
         try {
             saveCurrentProject();
             const libraryValue = localStorage.getItem('codepen-library') || '';
-            
             const projectData = {
                 html: editors.html.getValue(),
                 css: editors.css.getValue(),
@@ -1161,38 +1156,82 @@ function initializeEventListeners() {
                 library: libraryValue,
                 projectName: projects[currentProject]?.name || 'Проект'
             };
-            
-            showToast('Создание Raw ссылки...', 'info');
-            
-            const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+            showToast('Сохранение проекта...', 'info');
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(projectData)
             });
-            
             const result = await safeJsonParse(response);
-            
             if (result.success) {
-                const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
-                
-                // Сохраняем raw ссылку
-                saveRawLink({
-                    id: result.id,
-                    url: rawUrl,
-                    shortUrl: rawUrl,
-                    projectName: projects[currentProject]?.name || 'Проект',
-                    projectId: currentProject,
-                    type: 'raw',
-                    createdAt: new Date().toISOString()
-                });
-                
-                navigator.clipboard.writeText(rawUrl)
-                    .then(() => showToast('Raw ссылка скопирована!', 'success'))
-                    .catch(() => showToast('Raw ссылка создана: ' + rawUrl, 'success'));
+                const shareUrl = window.location.origin + '/codepen/?load=' + result.id;
+                navigator.clipboard.writeText(shareUrl)
+                    .then(() => showToast('Ссылка скопирована!', 'success'))
+                    .catch(() => showToast('Ссылка: ' + shareUrl, 'success'));
             } else {
-                showToast('Ошибка создания Raw ссылки: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка сети: ' + error.message, 'error');
+        }
+    });
+
+    document.getElementById('modal-share-fullscreen-btn').addEventListener('click', async () => {
+        try {
+            saveCurrentProject();
+            const libraryValue = localStorage.getItem('codepen-library') || '';
+            const projectData = {
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue,
+                projectName: projects[currentProject]?.name || 'Проект'
+            };
+            showToast('Сохранение проекта...', 'info');
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+            const result = await safeJsonParse(response);
+            if (result.success) {
+                const shareUrl = window.location.origin + '/codepen/?load=' + result.id + '&fullscreen';
+                navigator.clipboard.writeText(shareUrl)
+                    .then(() => showToast('Ссылка скопирована!', 'success'))
+                    .catch(() => showToast('Ссылка: ' + shareUrl, 'success'));
+            } else {
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка сети: ' + error.message, 'error');
+        }
+    });
+
+    document.getElementById('modal-share-raw-btn').addEventListener('click', async () => {
+        try {
+            saveCurrentProject();
+            const libraryValue = localStorage.getItem('codepen-library') || '';
+            const projectData = {
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue,
+                projectName: projects[currentProject]?.name || 'Проект'
+            };
+            showToast('Сохранение проекта...', 'info');
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(projectData)
+            });
+            const result = await safeJsonParse(response);
+            if (result.success) {
+                const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
+                navigator.clipboard.writeText(rawUrl)
+                    .then(() => showToast('Ссылка скопирована!', 'success'))
+                    .catch(() => showToast('Ссылка: ' + rawUrl, 'success'));
+            } else {
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
             }
         } catch (error) {
             showToast('Ошибка сети: ' + error.message, 'error');
@@ -1201,25 +1240,8 @@ function initializeEventListeners() {
 
     document.getElementById('modal-update-raw-btn').addEventListener('click', async () => {
         try {
-            // Ищем последнюю созданную Raw ссылку для текущего проекта
-            const rawLinks = JSON.parse(localStorage.getItem('codepen-raw-links') || '[]');
-            const projectRawLinks = rawLinks.filter(link => link.projectId === currentProject);
-            
-            if (projectRawLinks.length === 0) {
-                showToast('У этого проекта нет Raw ссылок. Создайте сначала.', 'error');
-                return;
-            }
-            
-            // Берем последнюю созданную ссылку
-            const lastRawLink = projectRawLinks[projectRawLinks.length - 1];
-            
-            if (!confirm(`Обновить Raw ссылку ${lastRawLink.shortUrl}?\nСтарое содержимое будет заменено новым.`)) {
-                return;
-            }
-            
             saveCurrentProject();
             const libraryValue = localStorage.getItem('codepen-library') || '';
-            
             const projectData = {
                 html: editors.html.getValue(),
                 css: editors.css.getValue(),
@@ -1227,37 +1249,20 @@ function initializeEventListeners() {
                 library: libraryValue,
                 projectName: projects[currentProject]?.name || 'Проект'
             };
-            
-            showToast('Обновление Raw ссылки...', 'info');
-            
-            // Отправляем PUT запрос для обновления
-            const response = await fetch(`https://codepen.fem-boy.ru/api/project/${lastRawLink.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+            showToast('Обновление проекта...', 'info');
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(projectData)
             });
-            
             const result = await safeJsonParse(response);
-            
             if (result.success) {
-                // Обновляем данные в localStorage
-                const updatedLink = {
-                    ...lastRawLink,
-                    updatedAt: new Date().toISOString()
-                };
-                
-                // Обновляем в массиве raw ссылок
-                const linkIndex = rawLinks.findIndex(link => link.id === lastRawLink.id);
-                if (linkIndex !== -1) {
-                    rawLinks[linkIndex] = updatedLink;
-                    localStorage.setItem('codepen-raw-links', JSON.stringify(rawLinks));
-                }
-                
-                showToast(`Raw ссылка обновлена: ${lastRawLink.shortUrl}`, 'success');
+                const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
+                navigator.clipboard.writeText(rawUrl)
+                    .then(() => showToast('Ссылка обновлена и скопирована!', 'success'))
+                    .catch(() => showToast('Ссылка: ' + rawUrl, 'success'));
             } else {
-                showToast('Ошибка обновления Raw ссылки: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
             }
         } catch (error) {
             showToast('Ошибка сети: ' + error.message, 'error');
@@ -1265,20 +1270,11 @@ function initializeEventListeners() {
     });
 
     document.getElementById('modal-qr-btn').addEventListener('click', openQRModal);
-
-    // Short link buttons in settings
-    document.getElementById('modal-create-link-btn').addEventListener('click', () => {
-        openShortLinkModal('create');
+    document.getElementById('close-qr-modal').addEventListener('click', closeQRModal);
+    document.getElementById('qr-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'qr-modal') closeQRModal();
     });
-    document.getElementById('modal-create-raw-link-btn').addEventListener('click', () => {
-        openShortLinkModal('create-raw');
-    });
-    document.getElementById('modal-view-links-btn').addEventListener('click', () => {
-        openShortLinkModal('view');
-    });
-    document.getElementById('modal-update-link-btn').addEventListener('click', () => {
-        openShortLinkModal('update');
-    });
+    document.getElementById('download-qr-btn').addEventListener('click', downloadQRCode);
 
     document.getElementById('clear-console').addEventListener('click', () => {
         document.getElementById('console').innerHTML = '';
@@ -1343,8 +1339,6 @@ function initializeEventListeners() {
 
         if (e.key === 'Escape') {
             closeSettingsModal();
-            closeShortLinkModal();
-            closeQRModal();
         }
     });
 }
@@ -1352,23 +1346,47 @@ function initializeEventListeners() {
 function loadFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const compressedData = urlParams.get('data');
+    const loadId = urlParams.get('load');
     const fullscreenMode = urlParams.has('fullscreen');
-    const rawMode = urlParams.has('raw');
+
+    if (loadId) {
+        showToast('Загрузка проекта...', 'info');
+        fetch('https://codepen-api.maybeyoou.workers.dev/api/project/' + loadId)
+            .then(r => r.json())
+            .then(result => {
+                if (result.success && result.project) {
+                    isLoadedFromURL = true;
+                    loadedProjectId = loadId;
+                    const saveBtn = document.getElementById('save-loaded-btn');
+                    if (saveBtn) saveBtn.style.display = 'inline-block';
+                    const editors_html = document.getElementById('editors-html');
+                    const editors_css = document.getElementById('editors-css');
+                    const editors_js = document.getElementById('editors-js');
+                    if (editors.html && result.project.html) editors.html.setValue(result.project.html);
+                    if (editors.css && result.project.css) editors.css.setValue(result.project.css);
+                    if (editors.js && result.project.js) editors.js.setValue(result.project.js);
+                    if (result.project.library) {
+                        const ls = document.getElementById('library-select');
+                        if (ls) ls.value = result.project.library;
+                    }
+                    showToast('Проект загружен! Нажмите "Сохранить как", чтобы сохранить.', 'success');
+                } else {
+                    showToast('Проект не найден', 'error');
+                }
+            })
+            .catch(() => showToast('Ошибка загрузки проекта', 'error'));
+    }
 
     if (compressedData) {
         try {
             const decompressed = LZString.decompressFromEncodedURIComponent(compressedData);
             const project = JSON.parse(decompressed);
-
-            // Если включен raw режим, отображаем только чистый HTML
-            if (rawMode) {
-                displayRawHTML(project);
-                return;
-            }
-
-            if (project.h !== undefined) editors.html.setValue(project.h);
-            if (project.c !== undefined) editors.css.setValue(project.c);
-            if (project.j !== undefined) editors.js.setValue(project.j);
+            isLoadedFromURL = true;
+            const saveBtn = document.getElementById('save-loaded-btn');
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+            if (project.h !== undefined && editors.html) editors.html.setValue(project.h);
+            if (project.c !== undefined && editors.css) editors.css.setValue(project.c);
+            if (project.j !== undefined && editors.js) editors.js.setValue(project.j);
             if (project.l !== undefined) {
                 const librarySelect = document.getElementById('library-select');
                 if (librarySelect) {
@@ -1376,61 +1394,18 @@ function loadFromURL() {
                 }
             }
             
-            showToast('Проект загружен из ссылки!', 'success');
+            showToast('Проект загружен из ссылки! Нажмите "Сохранить как", чтобы сохранить.', 'success');
         } catch (e) {
             showToast('Ошибка при загрузке из ссылки', 'error');
         }
     }
 
-    // Проверяем параметр fullscreen и автоматически открываем полноэкранный режим
     if (fullscreenMode) {
-        // Ждем немного, чтобы редакторы успели инициализироваться
         setTimeout(() => {
             toggleFullscreen();
-            showToast('Открыто в полноэкранном режиме 🖥️', 'info');
+            showToast('Открыто в полноэкранном режиме', 'info');
         }, 1000);
     }
-}
-
-function displayRawHTML(project) {
-    // Скрываем весь интерфейс редактора
-    document.body.innerHTML = '';
-    
-    // Получаем данные проекта
-    const html = project.h || '';
-    const css = project.c || '';
-    const js = project.j || '';
-    const library = project.l || '';
-
-    // Создаем чистый HTML документ
-    let libTag = '';
-    if (library) {
-        if (library.includes('.css')) {
-            libTag = `<link rel="stylesheet" href="${library}">`;
-        } else {
-            libTag = `<script src="${library}"></script>`;
-        }
-    }
-
-    const rawHTML = `<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raw HTML</title>
-    ${libTag}
-    <style>${css}</style>
-</head>
-<body>
-    ${html}
-    <script>${js}</script>
-</body>
-</html>`;
-
-    // Заменяем содержимое документа на чистый HTML
-    document.open();
-    document.write(rawHTML);
-    document.close();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1442,13 +1417,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeEventListeners();
     loadFromURL();
     updatePreview();
-    
-    // Очищаем дубликаты ссылок при первой загрузке
-    const cleanupDone = localStorage.getItem('codepen-cleanup-done');
-    if (!cleanupDone) {
-        localStorage.removeItem('codepen-short-links');
-        localStorage.setItem('codepen-cleanup-done', 'true');
-    }
     
     // Регистрация Service Worker для PWA
     if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
@@ -1602,637 +1570,45 @@ setTimeout(() => {
     }
 }, 2000);
 
-// Функции для работы с короткими ссылками
-function openShortLinkModal(mode = 'create') {
-    const modal = document.getElementById('link-modal');
-    const title = document.getElementById('link-modal-title');
-    
-    // Скрываем все секции
-    document.getElementById('create-link-section').style.display = 'none';
-    document.getElementById('view-links-section').style.display = 'none';
-    document.getElementById('edit-link-section').style.display = 'none';
-    
-    // Показываем нужную секцию
-    switch(mode) {
-        case 'create':
-            title.textContent = '🔗 Создать короткую ссылку';
-            document.getElementById('create-link-section').style.display = 'block';
-            
-            // Заполняем информацию о текущем проекте
-            const projectName = projects[currentProject]?.name || 'Текущий проект';
-            document.getElementById('current-project-name').value = projectName;
-            
-            // Генерируем URL проекта
-            const projectUrl = generateProjectUrl();
-            document.getElementById('project-url').value = projectUrl;
-            break;
-            
-        case 'create-raw':
-            title.textContent = '📄 Создать Raw ссылку';
-            document.getElementById('create-link-section').style.display = 'block';
-            
-            // Заполняем информацию о текущем проекте
-            const rawProjectName = projects[currentProject]?.name || 'Текущий проект';
-            document.getElementById('current-project-name').value = rawProjectName + ' (Raw HTML)';
-            
-            // Генерируем Raw URL проекта
-            const rawProjectUrl = generateProjectUrl() + '&raw';
-            document.getElementById('project-url').value = rawProjectUrl;
-            break;
-            
-        case 'view':
-            title.textContent = '📋 Мои короткие ссылки';
-            document.getElementById('view-links-section').style.display = 'block';
-            displaySavedLinks();
-            break;
-            
-        case 'update':
-            title.textContent = '🔄 Обновить ссылку проекта';
-            document.getElementById('edit-link-section').style.display = 'block';
-            
-            // Показываем текущую ссылку проекта
-            const projectLink = getProjectLink(currentProject);
-            document.getElementById('current-project-link').value = projectLink ? projectLink.shortUrl : 'Ссылка не создана';
-            break;
-    }
-    
-    // Очищаем результат
-    document.getElementById('link-result').innerHTML = '';
-    document.getElementById('link-result').className = 'link-result';
-    
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeShortLinkModal() {
-    const modal = document.getElementById('link-modal');
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-function generateProjectUrl() {
-    saveCurrentProject();
-    const libraryValue = localStorage.getItem('codepen-library') || '';
-    
-    const compressed = LZString.compressToEncodedURIComponent(JSON.stringify({
-        h: editors.html.getValue(),
-        c: editors.css.getValue(),
-        j: editors.js.getValue(),
-        l: libraryValue
-    }));
-    
-    return `${window.location.origin}${window.location.pathname}?data=${compressed}`;
-}
-
-async function createShortLink() {
-    const projectUrl = document.getElementById('project-url').value;
-    const resultDiv = document.getElementById('link-result');
-    
-    if (!projectUrl) {
-        showResult('Ошибка: URL проекта не сгенерирован', 'error');
-        return;
-    }
-    
-    // Проверяем, создаём ли мы raw ссылку
-    const isRawLink = projectUrl.includes('&raw');
-    
-    if (isRawLink) {
-        // Для raw ссылок используем новый API
-        await createRawLink();
-        return;
-    }
-    
-    // Проверяем, есть ли уже ссылка для этого проекта (только для обычных ссылок)
-    const existingLink = getProjectLink(currentProject);
-    if (existingLink) {
-        showResult(`У этого проекта уже есть ссылка: ${existingLink.shortUrl}\n\nИспользуйте "Обновить ссылку" для изменения.`, 'error');
-        return;
-    }
-    
-    try {
-        showResult('Создание короткой ссылки...', '');
-        
-        const response = await fetch('https://click.fem-boy.ru/api/code', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                url: projectUrl
-            })
-        });
-        
-        const result = await safeJsonParse(response);
-        
-        if (result.success) {
-            const shortUrl = `https://click.fem-boy.ru/${result.code}`;
-            
-            // Сохраняем в localStorage с привязкой к проекту
-            saveProjectLink(currentProject, {
-                id: result.id,
-                code: result.code,
-                url: projectUrl,
-                shortUrl: shortUrl,
-                secretKey: result.secretKey,
-                projectName: projects[currentProject]?.name || 'Проект',
-                projectId: currentProject,
-                createdAt: new Date().toISOString()
-            });
-            
-            // Простой вывод - только ссылка
-            showResult(shortUrl, 'success');
-            
-            // Копируем короткую ссылку в буфер обмена
-            navigator.clipboard.writeText(shortUrl)
-                .then(() => showToast('Короткая ссылка скопирована в буфер обмена!', 'success'))
-                .catch(() => showToast('Короткая ссылка создана', 'success'));
-                
-        } else {
-            showResult(`❌ Ошибка: ${result.error || 'Неизвестная ошибка'}`, 'error');
-        }
-        
-    } catch (error) {
-        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
-    }
-}
-
-async function createRawLink() {
-    try {
-        showResult('Создание Raw ссылки...', '');
-        
-        // Получаем данные проекта
-        saveCurrentProject();
-        const libraryValue = localStorage.getItem('codepen-library') || '';
-        
-        const projectData = {
-            html: editors.html.getValue(),
-            css: editors.css.getValue(),
-            js: editors.js.getValue(),
-            library: libraryValue,
-            projectName: projects[currentProject]?.name || 'Проект'
-        };
-        
-        const response = await fetch('https://codepen.fem-boy.ru/api/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(projectData)
-        });
-        
-        const result = await safeJsonParse(response);
-        
-        if (result.success) {
-            const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
-            
-            // Сохраняем raw ссылку
-            saveRawLink({
-                id: result.id,
-                url: rawUrl,
-                shortUrl: rawUrl,
-                projectName: projects[currentProject]?.name || 'Проект',
-                projectId: currentProject,
-                type: 'raw',
-                createdAt: new Date().toISOString()
-            });
-            
-            // Простой вывод - только ссылка
-            showResult(rawUrl, 'success');
-            
-            // Копируем ссылку в буфер обмена
-            navigator.clipboard.writeText(rawUrl)
-                .then(() => showToast('Raw ссылка скопирована в буфер обмена!', 'success'))
-                .catch(() => showToast('Raw ссылка создана', 'success'));
-                
-        } else {
-            showResult(`❌ Ошибка: ${result.error || 'Не удалось создать Raw ссылку'}`, 'error');
-        }
-        
-    } catch (error) {
-        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
-        console.error('Ошибка создания Raw ссылки:', error);
-    }
-}
-
-function saveShortLink(linkData) {
-    let savedLinks = JSON.parse(localStorage.getItem('codepen-short-links') || '[]');
-    savedLinks.push(linkData);
-    
-    // Ограничиваем количество сохраненных ссылок (последние 50)
-    if (savedLinks.length > 50) {
-        savedLinks = savedLinks.slice(-50);
-    }
-    
-    localStorage.setItem('codepen-short-links', JSON.stringify(savedLinks));
-}
-
-function saveProjectLink(projectId, linkData) {
-    let projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
-    projectLinks[projectId] = linkData;
-    localStorage.setItem('codepen-project-links', JSON.stringify(projectLinks));
-    
-    // НЕ сохраняем в общий список, чтобы избежать дубликатов
-}
-
-function saveRawLink(linkData) {
-    let rawLinks = JSON.parse(localStorage.getItem('codepen-raw-links') || '[]');
-    rawLinks.push(linkData);
-    
-    // Ограничиваем количество сохраненных raw ссылок (последние 100)
-    if (rawLinks.length > 100) {
-        rawLinks = rawLinks.slice(-100);
-    }
-    
-    localStorage.setItem('codepen-raw-links', JSON.stringify(rawLinks));
-}
-
-function getProjectLink(projectId) {
-    const projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
-    return projectLinks[projectId] || null;
-}
-
-function removeProjectLinkFromStorage(projectId) {
-    let projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
-    delete projectLinks[projectId];
-    localStorage.setItem('codepen-project-links', JSON.stringify(projectLinks));
-}
-
-async function updateProjectLink() {
-    const projectLink = getProjectLink(currentProject);
-    
-    if (!projectLink) {
-        showResult('У этого проекта нет короткой ссылки. Создайте её сначала.', 'error');
-        return;
-    }
-    
-    if (!confirm('Обновление пересоздаст ссылку с новым содержимым. Продолжить?')) {
-        return;
-    }
-    
-    try {
-        showResult('Обновление ссылки проекта...', '');
-        
-        // Получаем данные проекта
-        saveCurrentProject();
-        const libraryValue = localStorage.getItem('codepen-library') || '';
-        
-        const projectData = {
-            html: editors.html.getValue(),
-            css: editors.css.getValue(),
-            js: editors.js.getValue(),
-            library: libraryValue,
-            projectName: projects[currentProject]?.name || 'Проект'
-        };
-        
-        const response = await fetch('https://codepen.fem-boy.ru/api/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(projectData)
-        });
-        
-        const result = await safeJsonParse(response);
-        
-        if (result.success) {
-            const newRawUrl = `https://codepen.fem-boy.ru/${result.id}`;
-            
-            // Обновляем сохраненную ссылку
-            const updatedLink = {
-                ...projectLink,
-                id: result.id,
-                url: newRawUrl,
-                shortUrl: newRawUrl,
-                updatedAt: new Date().toISOString()
-            };
-            
-            saveProjectLink(currentProject, updatedLink);
-            
-            showResult(`✅ Ссылка проекта обновлена!\n\n🔗 ${newRawUrl}`, 'success');
-            
-            // Обновляем отображение текущей ссылки
-            document.getElementById('current-project-link').value = newRawUrl;
-            
-            showToast('Ссылка проекта обновлена', 'success');
-            
-        } else {
-            showResult(`❌ Ошибка: ${result.error || 'Не удалось обновить ссылку'}`, 'error');
-        }
-        
-    } catch (error) {
-        showResult(`❌ Ошибка сети: ${error.message}`, 'error');
-    }
-}
-
-async function deleteProjectLink() {
-    const projectLink = getProjectLink(currentProject);
-    
-    if (!projectLink) {
-        showResult('У этого проекта нет короткой ссылки.', 'error');
-        return;
-    }
-    
-    if (!confirm('Вы уверены, что хотите удалить ссылку проекта? Это действие нельзя отменить.')) {
-        return;
-    }
-    
-    // Удаляем из localStorage
-    removeProjectLinkFromStorage(currentProject);
-    
-    showResult('🗑 Ссылка проекта удалена из локального хранилища.', 'success');
-    document.getElementById('current-project-link').value = 'Ссылка не создана';
-    
-    showToast('Ссылка проекта удалена', 'info');
-}
-
-function getSavedShortLinks() {
-    return JSON.parse(localStorage.getItem('codepen-short-links') || '[]');
-}
-
-function viewSavedLinks() {
-    const savedLinks = getSavedShortLinks();
-    
-    if (savedLinks.length === 0) {
-        showResult('У вас пока нет сохраненных ссылок', '');
-        return;
-    }
-    
-    let resultText = `📋 Ваши короткие ссылки (${savedLinks.length}):\n\n`;
-    
-    savedLinks.reverse().forEach((link, index) => {
-        const date = new Date(link.createdAt).toLocaleDateString('ru-RU');
-        resultText += `${index + 1}. ${link.projectName}\n`;
-        resultText += `   🔗 ${link.shortUrl}\n`;
-        resultText += `   📅 ${date}\n\n`;
-    });
-    
-    showResult(resultText, 'success');
-}
-
-function displaySavedLinks() {
-    // Получаем ссылки из хранилища проектов
-    const projectLinks = JSON.parse(localStorage.getItem('codepen-project-links') || '{}');
-    const rawLinks = JSON.parse(localStorage.getItem('codepen-raw-links') || '[]');
-    
-    // Объединяем все ссылки
-    const allLinks = [
-        ...Object.values(projectLinks),
-        ...rawLinks
-    ];
-    
-    const container = document.getElementById('saved-links-list');
-    
-    if (allLinks.length === 0) {
-        container.innerHTML = '<p>У вас пока нет сохраненных ссылок</p>';
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    // Сортируем по дате создания (новые сначала)
-    allLinks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    allLinks.forEach((link, index) => {
-        const date = new Date(link.createdAt).toLocaleDateString('ru-RU');
-        const linkItem = document.createElement('div');
-        linkItem.className = 'saved-link-item';
-        
-        // Определяем тип ссылки
-        const linkType = link.type === 'raw' ? ' (Raw HTML)' : '';
-        const linkIcon = link.type === 'raw' ? '📄' : '🔗';
-        
-        linkItem.innerHTML = `
-            <div class="link-name">${linkIcon} ${link.projectName}${linkType}</div>
-            <div class="link-url" onclick="copyToClipboard('${link.shortUrl}')">${link.shortUrl}</div>
-            <div class="link-date">Создана: ${date}</div>
-            <div class="link-actions">
-                <button class="settings-btn primary" onclick="copyToClipboard('${link.shortUrl}')">📋 Копировать</button>
-            </div>
-        `;
-        
-        container.appendChild(linkItem);
-    });
-}
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text)
-        .then(() => showToast('Скопировано в буфер обмена!', 'success'))
-        .catch(() => showToast('Не удалось скопировать', 'error'));
-}
-
-// Функция для очистки дубликатов (можно вызвать один раз для очистки)
-function cleanupDuplicateLinks() {
-    localStorage.removeItem('codepen-short-links');
-    showToast('Дубликаты ссылок очищены', 'info');
-}
-
-function showResult(text, type) {
-    const resultDiv = document.getElementById('link-result');
-    resultDiv.textContent = text;
-    resultDiv.className = `link-result ${type}`;
-}
-
-// QR Code functionality
 function openQRModal() {
     const modal = document.getElementById('qr-modal');
-    
-    // Заполняем информацию о текущем проекте
-    const projectName = projects[currentProject]?.name || 'Текущий проект';
+    const projectName = projects[currentProject]?.name || 'Project';
     document.getElementById('qr-project-name').value = projectName;
-    
-    // Показываем сообщение о создании короткой ссылки
-    document.getElementById('qr-project-url').value = 'Создание короткой ссылки для QR-кода...';
-    
-    // Очищаем предыдущий QR-код
+    document.getElementById('qr-project-url').value = 'Создание ссылки...';
     document.getElementById('qr-code-display').innerHTML = '';
     document.getElementById('download-qr-btn').style.display = 'none';
-    
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    
-    // Автоматически создаем короткую ссылку и генерируем QR-код (по умолчанию fullscreen)
-    createShortLinkForQR('fullscreen');
-}
 
-async function createShortLinkForQR(mode = 'fullscreen') {
-    const qrDisplay = document.getElementById('qr-code-display');
-    const qrLoading = document.getElementById('qr-loading');
-    const qrUrlField = document.getElementById('qr-project-url');
-    
-    try {
-        // Показываем индикатор загрузки
-        qrDisplay.innerHTML = '';
-        qrLoading.style.display = 'flex';
-        qrLoading.querySelector('p').textContent = 'Создание ссылки...';
-        
-        let finalUrl;
-        
-        if (mode === 'raw') {
-            // Для raw режима используем новый API
-            saveCurrentProject();
-            const libraryValue = localStorage.getItem('codepen-library') || '';
-            
-            const projectData = {
-                html: editors.html.getValue(),
-                css: editors.css.getValue(),
-                js: editors.js.getValue(),
-                library: libraryValue,
-                projectName: projects[currentProject]?.name || 'Проект'
-            };
-            
-            const response = await fetch('https://codepen.fem-boy.ru/api/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(projectData)
-            });
-            
-            const result = await safeJsonParse(response);
-            
-            if (result.success) {
-                finalUrl = `https://codepen.fem-boy.ru/${result.id}`;
-                
-                // Сохраняем raw ссылку
-                saveRawLink({
-                    id: result.id,
-                    url: finalUrl,
-                    shortUrl: finalUrl,
-                    projectName: projects[currentProject]?.name || 'Проект',
-                    projectId: currentProject,
-                    type: 'raw',
-                    createdAt: new Date().toISOString()
-                });
-            } else {
-                throw new Error(result.error || 'Не удалось создать Raw ссылку');
-            }
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    const projectData = {
+        html: editors.html.getValue(),
+        css: editors.css.getValue(),
+        js: editors.js.getValue(),
+        library: libraryValue,
+        projectName: projectName
+    };
+
+    fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            const url = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
+            document.getElementById('qr-project-url').value = url;
+            return generateQRCodeFromUrl(url);
         } else {
-            // Для fullscreen используем старый API с короткими ссылками
-            const baseUrl = generateProjectUrl();
-            const separator = baseUrl.includes('?') ? '&' : '?';
-            const fullUrl = baseUrl + separator + mode;
-            
-            const response = await fetch('https://click.fem-boy.ru/api/code', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    url: fullUrl
-                })
-            });
-            
-            const result = await safeJsonParse(response);
-            
-            if (result.success) {
-                finalUrl = `https://click.fem-boy.ru/${result.code}`;
-            } else {
-                throw new Error(result.error || 'Не удалось создать короткую ссылку');
-            }
+            throw new Error(result.error || 'Не удалось создать ссылку');
         }
-        
-        // Обновляем поле URL
-        qrUrlField.value = finalUrl;
-        
-        // Обновляем индикатор загрузки
-        qrLoading.querySelector('p').textContent = 'Генерация QR-кода...';
-        
-        // Генерируем QR-код для ссылки
-        await generateQRCodeFromUrl(finalUrl);
-        
-        const modeText = mode === 'raw' ? 'Raw HTML' : 'полноэкранным режимом';
-        showToast(`QR-код создан с ${modeText}!`, 'success');
-        
-    } catch (error) {
-        console.error('Ошибка создания ссылки для QR:', error);
-        
-        // Скрываем индикатор загрузки
-        qrLoading.style.display = 'none';
-        
-        // Показываем ошибку
-        qrDisplay.innerHTML = `
-            <div style="text-align: center; color: #dc3545; padding: 20px;">
-                <p>❌ Ошибка создания ссылки</p>
-                <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
-                <button onclick="createShortLinkForQR('${mode}')" style="margin-top: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Попробовать снова</button>
-            </div>
-        `;
-        
-        qrUrlField.value = 'Ошибка создания ссылки';
-        showToast('Ошибка создания ссылки: ' + error.message, 'error');
-    }
-}
-
-async function generateQRCodeFromUrl(url) {
-    const qrDisplay = document.getElementById('qr-code-display');
-    const qrLoading = document.getElementById('qr-loading');
-    const downloadBtn = document.getElementById('download-qr-btn');
-    
-    try {
-        // Кодируем URL для использования в API
-        const encodedUrl = encodeURIComponent(url);
-        
-        // Формируем URL для API генерации QR-кода
-        const qrApiUrl = `https://public-api.qr-code-generator.com/v1/create/free?image_format=SVG&image_width=500&foreground_color=%23000000&frame_color=%23000000&frame_name=no-frame&qr_code_logo=&qr_code_pattern=&qr_code_text=${encodedUrl}`;
-        
-        // Делаем запрос к API
-        const response = await fetch(qrApiUrl);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        // Получаем SVG как текст
-        const svgText = await response.text();
-        
-        // Скрываем индикатор загрузки
-        qrLoading.style.display = 'none';
-        
-        // Отображаем QR-код с дополнительной обработкой
-        qrDisplay.innerHTML = svgText;
-        
-        // Дополнительная настройка SVG для правильного отображения
-        const svgElement = qrDisplay.querySelector('svg');
-        if (svgElement) {
-            // Убираем атрибуты width и height, чтобы CSS мог управлять размером
-            svgElement.removeAttribute('width');
-            svgElement.removeAttribute('height');
-            
-            // Устанавливаем viewBox если его нет
-            if (!svgElement.getAttribute('viewBox')) {
-                svgElement.setAttribute('viewBox', '0 0 500 500');
-            }
-            
-            // Принудительно устанавливаем стили
-            svgElement.style.width = '100%';
-            svgElement.style.height = '100%';
-            svgElement.style.display = 'block';
-        }
-        
-        // Показываем кнопку скачивания
-        downloadBtn.style.display = 'inline-flex';
-        
-    } catch (error) {
-        console.error('Ошибка генерации QR-кода:', error);
-        
-        // Скрываем индикатор загрузки
-        qrLoading.style.display = 'none';
-        
-        // Показываем ошибку
-        qrDisplay.innerHTML = `
-            <div style="text-align: center; color: #dc3545; padding: 20px;">
-                <p>❌ Ошибка генерации QR-кода</p>
-                <p style="font-size: 12px; margin-top: 10px;">${error.message}</p>
-                <button onclick="generateQRCodeFromUrl('${url}')" style="margin-top: 10px; padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">🔄 Попробовать снова</button>
-            </div>
-        `;
-        
-        throw error;
-    }
-}
-
-function updateQRUrl() {
-    // Эта функция больше не нужна, так как QR всегда генерируется с короткой ссылкой
+    })
+    .catch(err => {
+        document.getElementById('qr-project-url').value = 'Ошибка: ' + err.message;
+        showToast('Ошибка: ' + err.message, 'error');
+    });
 }
 
 function closeQRModal() {
@@ -2241,48 +1617,472 @@ function closeQRModal() {
     document.body.style.overflow = '';
 }
 
-async function generateQRCode() {
-    // Эта функция теперь используется только для обратной совместимости
-    // Основная логика перенесена в createShortLinkForQR
-    await createShortLinkForQR();
+async function generateQRCodeFromUrl(url) {
+    const qrDisplay = document.getElementById('qr-code-display');
+    const qrLoading = document.getElementById('qr-loading');
+    const downloadBtn = document.getElementById('download-qr-btn');
+
+    try {
+        qrDisplay.innerHTML = '';
+        qrLoading.style.display = 'flex';
+        const encodedUrl = encodeURIComponent(url);
+        const qrApiUrl = `https://public-api.qr-code-generator.com/v1/create/free?image_format=SVG&image_width=500&foreground_color=%23000000&frame_color=%23000000&frame_name=no-frame&qr_code_logo=&qr_code_pattern=&qr_code_text=${encodedUrl}`;
+        const response = await fetch(qrApiUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const svgText = await response.text();
+        qrLoading.style.display = 'none';
+        qrDisplay.innerHTML = svgText;
+        const svgElement = qrDisplay.querySelector('svg');
+        if (svgElement) {
+            svgElement.removeAttribute('width');
+            svgElement.removeAttribute('height');
+            if (!svgElement.getAttribute('viewBox')) {
+                svgElement.setAttribute('viewBox', '0 0 500 500');
+            }
+            svgElement.style.width = '100%';
+            svgElement.style.height = '100%';
+            svgElement.style.display = 'block';
+        }
+        downloadBtn.style.display = 'inline-flex';
+    } catch (error) {
+        qrLoading.style.display = 'none';
+        qrDisplay.innerHTML = '<p style="color:red;">Ошибка генерации QR-кода: ' + error.message + '</p>';
+        showToast('Ошибка QR: ' + error.message, 'error');
+    }
 }
 
 function downloadQRCode() {
     const qrDisplay = document.getElementById('qr-code-display');
     const svgElement = qrDisplay.querySelector('svg');
-    
     if (!svgElement) {
-        showToast('QR-код не найден для скачивания', 'error');
+        showToast('QR-код не найден', 'error');
         return;
     }
-    
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = (projects[currentProject]?.name || 'project') + '-qr.svg';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
+    showToast('QR-код скачан!', 'success');
+}
+
+// ==================== AUTH & CLOUD ====================
+
+const API_BASE = 'https://codepen-api.maybeyoou.workers.dev';
+let authToken = localStorage.getItem('codepen-auth-token') || null;
+let currentUser = null;
+
+function authHeaders() {
+    return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
+}
+
+async function authFetch(url, options = {}) {
+    const headers = { ...authHeaders(), ...(options.headers || {}) };
+    return fetch(url, { ...options, headers });
+}
+
+async function checkAuth() {
+    if (!authToken) { updateAuthUI(false); return; }
     try {
-        // Получаем SVG как строку
-        const svgData = new XMLSerializer().serializeToString(svgElement);
-        
-        // Создаем Blob с SVG данными
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        
-        // Создаем URL для скачивания
-        const url = URL.createObjectURL(svgBlob);
-        
-        // Создаем ссылку для скачивания
-        const downloadLink = document.createElement('a');
-        downloadLink.href = url;
-        downloadLink.download = `${projects[currentProject]?.name || 'project'}-qr-code.svg`;
-        
-        // Запускаем скачивание
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-        
-        // Освобождаем URL
-        URL.revokeObjectURL(url);
-        
-        showToast('QR-код скачан!', 'success');
-        
-    } catch (error) {
-        console.error('Ошибка скачивания QR-кода:', error);
-        showToast('Ошибка скачивания QR-кода: ' + error.message, 'error');
+        const r = await authFetch(API_BASE + '/api/auth/me');
+        const data = await r.json();
+        if (data.success) {
+            currentUser = data.user;
+            updateAuthUI(true);
+        } else {
+            authToken = null;
+            localStorage.removeItem('codepen-auth-token');
+            updateAuthUI(false);
+        }
+    } catch { updateAuthUI(false); }
+}
+
+function updateAuthUI(loggedIn) {
+    const btn = document.getElementById('auth-btn');
+    const loginForm = document.getElementById('auth-login-form');
+    const registerForm = document.getElementById('auth-register-form');
+    const userInfo = document.getElementById('auth-user-info');
+
+    if (loggedIn && currentUser) {
+        btn.textContent = '👤 ' + currentUser.username;
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'none';
+        userInfo.style.display = 'block';
+        document.getElementById('auth-username-display').textContent = currentUser.username;
+        document.getElementById('auth-email-display').textContent = currentUser.email;
+        loadCloudProjects();
+    } else {
+        btn.textContent = '👤 Войти';
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        userInfo.style.display = 'none';
     }
 }
+
+function openAuthModal() {
+    document.getElementById('auth-modal').classList.add('active');
+    checkAuth();
+}
+
+function closeAuthModal() {
+    document.getElementById('auth-modal').classList.remove('active');
+}
+
+// Register
+async function authRegister() {
+    if (!isPolicyAccepted()) {
+        showPolicyModal();
+        return;
+    }
+
+    const username = document.getElementById('auth-register-username').value.trim();
+    const email = document.getElementById('auth-register-email').value.trim();
+    const password = document.getElementById('auth-register-password').value;
+    const errEl = document.getElementById('auth-register-error');
+
+    if (!username || !email || !password) {
+        errEl.textContent = 'Заполните все поля';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const r = await fetch(API_BASE + '/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+        const data = await r.json();
+        if (data.success) {
+            authToken = data.token;
+            localStorage.setItem('codepen-auth-token', authToken);
+            currentUser = data.user;
+            updateAuthUI(true);
+            showToast('Регистрация успешна!', 'success');
+        } else {
+            errEl.textContent = data.error;
+            errEl.style.display = 'block';
+        }
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети';
+        errEl.style.display = 'block';
+    }
+}
+
+// Login
+async function authLogin() {
+    const login = document.getElementById('auth-login-input').value.trim();
+    const password = document.getElementById('auth-login-password').value;
+    const errEl = document.getElementById('auth-login-error');
+
+    if (!login || !password) {
+        errEl.textContent = 'Заполните все поля';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const r = await fetch(API_BASE + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login, password })
+        });
+        const data = await r.json();
+        if (data.success) {
+            authToken = data.token;
+            localStorage.setItem('codepen-auth-token', authToken);
+            currentUser = data.user;
+            updateAuthUI(true);
+            showToast('Вход выполнен!', 'success');
+        } else {
+            errEl.textContent = data.error;
+            errEl.style.display = 'block';
+        }
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети';
+        errEl.style.display = 'block';
+    }
+}
+
+// Logout
+function authLogout() {
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem('codepen-auth-token');
+    updateAuthUI(false);
+    showToast('Вы вышли из аккаунта', 'info');
+}
+
+// Change password
+async function authChangePassword() {
+    const newPassword = document.getElementById('auth-new-password').value;
+    const errEl = document.getElementById('auth-password-error');
+    const okEl = document.getElementById('auth-password-success');
+
+    errEl.style.display = 'none';
+    okEl.style.display = 'none';
+
+    if (!newPassword) {
+        errEl.textContent = 'Введите новый пароль';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const r = await authFetch(API_BASE + '/api/auth/password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword })
+        });
+        const data = await r.json();
+        if (data.success) {
+            okEl.textContent = 'Пароль изменён!';
+            okEl.style.display = 'block';
+            document.getElementById('auth-new-password').value = '';
+        } else {
+            errEl.textContent = data.error;
+            errEl.style.display = 'block';
+        }
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети';
+        errEl.style.display = 'block';
+    }
+}
+
+// Cloud projects
+let cloudProjects = [];
+
+async function loadCloudProjects() {
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects');
+        const data = await r.json();
+        if (data.success) {
+            cloudProjects = data.projects;
+            const select = document.getElementById('cloud-project-select');
+            select.innerHTML = '<option value="">-- Выберите проект --</option>';
+            data.projects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error loading cloud projects:', e);
+    }
+}
+
+async function cloudSaveProject() {
+    if (!currentUser) return;
+    const name = document.getElementById('cloud-project-name').value.trim() || projects[currentProject]?.name || 'Проект';
+    const statusEl = document.getElementById('cloud-status');
+
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue
+            })
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('Проект сохранён в облако!', 'success');
+            loadCloudProjects();
+        } else {
+            statusEl.textContent = data.error;
+            statusEl.style.display = 'block';
+        }
+    } catch (e) {
+        statusEl.textContent = 'Ошибка сети';
+        statusEl.style.display = 'block';
+    }
+}
+
+async function cloudUpdateProject() {
+    if (!currentUser) return;
+    const select = document.getElementById('cloud-project-select');
+    const projectId = select.value;
+    if (!projectId) { showToast('Выберите проект', 'error'); return; }
+
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    const name = document.getElementById('cloud-project-name').value.trim();
+
+    try {
+        const body = {
+            html: editors.html.getValue(),
+            css: editors.css.getValue(),
+            js: editors.js.getValue(),
+            library: libraryValue
+        };
+        if (name) body.name = name;
+
+        const r = await authFetch(API_BASE + '/api/user/projects/' + projectId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('Проект обновлён в облаке!', 'success');
+            loadCloudProjects();
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка сети', 'error');
+    }
+}
+
+async function cloudLoadProject() {
+    if (!currentUser) return;
+    const select = document.getElementById('cloud-project-select');
+    const projectId = select.value;
+    if (!projectId) { showToast('Выберите проект', 'error'); return; }
+
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects/' + projectId);
+        const data = await r.json();
+        if (data.success) {
+            const p = data.project;
+            if (p.html) editors.html.setValue(p.html);
+            if (p.css) editors.css.setValue(p.css);
+            if (p.js) editors.js.setValue(p.js);
+            if (p.library) {
+                const ls = document.getElementById('library-select');
+                if (ls) ls.value = p.library;
+                const mls = document.getElementById('modal-library-select');
+                if (mls) mls.value = p.library;
+            }
+            document.getElementById('cloud-project-name').value = p.name;
+            showToast('Проект загружен из облака!', 'success');
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка сети', 'error');
+    }
+}
+
+async function cloudDeleteProject() {
+    if (!currentUser) return;
+    const select = document.getElementById('cloud-project-select');
+    const projectId = select.value;
+    if (!projectId) { showToast('Выберите проект', 'error'); return; }
+
+    if (!confirm('Удалить проект из облака?')) return;
+
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects/' + projectId, {
+            method: 'DELETE'
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('Проект удалён', 'success');
+            loadCloudProjects();
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка сети', 'error');
+    }
+}
+
+function initAuthListeners() {
+    document.getElementById('auth-btn').addEventListener('click', openAuthModal);
+    document.getElementById('close-auth-modal').addEventListener('click', closeAuthModal);
+    document.getElementById('auth-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'auth-modal') closeAuthModal();
+    });
+
+    document.getElementById('auth-show-register').addEventListener('click', () => {
+        document.getElementById('auth-login-form').style.display = 'none';
+        document.getElementById('auth-register-form').style.display = 'block';
+        document.getElementById('auth-modal-title').textContent = 'Регистрация';
+    });
+
+    document.getElementById('auth-show-login').addEventListener('click', () => {
+        document.getElementById('auth-login-form').style.display = 'block';
+        document.getElementById('auth-register-form').style.display = 'none';
+        document.getElementById('auth-modal-title').textContent = 'Вход';
+    });
+
+    document.getElementById('auth-login-btn').addEventListener('click', authLogin);
+    document.getElementById('auth-register-btn').addEventListener('click', authRegister);
+    document.getElementById('auth-logout-btn').addEventListener('click', authLogout);
+
+    document.getElementById('cloud-save-btn').addEventListener('click', cloudSaveProject);
+    document.getElementById('cloud-save-as-btn').addEventListener('click', cloudSaveProject);
+    document.getElementById('cloud-load-btn').addEventListener('click', cloudLoadProject);
+    document.getElementById('cloud-delete-btn').addEventListener('click', cloudDeleteProject);
+
+    document.getElementById('cloud-project-select').addEventListener('change', (e) => {
+        const project = cloudProjects.find(p => p.id == e.target.value);
+        if (project) {
+            document.getElementById('cloud-project-name').value = project.name;
+        }
+    });
+
+    document.getElementById('auth-login-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') authLogin();
+    });
+    document.getElementById('auth-register-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') authRegister();
+    });
+
+    document.getElementById('auth-change-password-btn').addEventListener('click', authChangePassword);
+    document.getElementById('auth-new-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') authChangePassword();
+    });
+}
+
+// Add initAuthListeners to DOMContentLoaded
+const _origDOMContentLoaded = document.addEventListener;
+document.addEventListener('DOMContentLoaded', () => {
+    initAuthListeners();
+    checkAuth();
+    initPolicyCheck();
+});
+
+// ==================== POLICY ====================
+
+function isPolicyAccepted() {
+    return localStorage.getItem('codepen-policies-accepted') === 'true';
+}
+
+function acceptPolicies() {
+    localStorage.setItem('codepen-policies-accepted', 'true');
+    document.getElementById('policy-modal').classList.remove('active');
+}
+
+function showPolicyModal() {
+    document.getElementById('policy-modal').classList.add('active');
+}
+
+function initPolicyCheck() {
+    if (!isPolicyAccepted()) {
+        showPolicyModal();
+    }
+
+    const check = document.getElementById('policy-check');
+    const acceptBtn = document.getElementById('policy-accept-btn');
+
+    check.addEventListener('change', () => {
+        acceptBtn.disabled = !check.checked;
+    });
+    acceptBtn.addEventListener('click', acceptPolicies);
+}
+
