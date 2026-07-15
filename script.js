@@ -1184,7 +1184,7 @@ function initializeEventListeners() {
             
             showToast('Создание Raw ссылки...', 'info');
             
-            const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1251,7 +1251,7 @@ function initializeEventListeners() {
             showToast('Обновление Raw ссылки...', 'info');
             
             // Отправляем PUT запрос для обновления
-            const response = await fetch(`https://codepen.fem-boy.ru/api/project/${lastRawLink.id}`, {
+            const response = await fetch(`https://codepen-api.maybeyoou.workers.dev/api/project/${lastRawLink.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1792,7 +1792,7 @@ async function createRawLink() {
             projectName: projects[currentProject]?.name || 'Проект'
         };
         
-        const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+        const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1904,7 +1904,7 @@ async function updateProjectLink() {
             projectName: projects[currentProject]?.name || 'Проект'
         };
         
-        const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+        const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2100,7 +2100,7 @@ async function createShortLinkForQR(mode = 'fullscreen') {
                 projectName: projects[currentProject]?.name || 'Проект'
             };
             
-            const response = await fetch('https://codepen.fem-boy.ru/api/create', {
+            const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
