@@ -1735,6 +1735,11 @@ function closeAuthModal() {
 
 // Register
 async function authRegister() {
+    if (!isPolicyAccepted()) {
+        showPolicyModal();
+        return;
+    }
+
     const username = document.getElementById('auth-register-username').value.trim();
     const email = document.getElementById('auth-register-email').value.trim();
     const password = document.getElementById('auth-register-password').value;
@@ -2008,5 +2013,35 @@ const _origDOMContentLoaded = document.addEventListener;
 document.addEventListener('DOMContentLoaded', () => {
     initAuthListeners();
     checkAuth();
+    initPolicyCheck();
 });
+
+// ==================== POLICY ====================
+
+function isPolicyAccepted() {
+    return localStorage.getItem('codepen-policies-accepted') === 'true';
+}
+
+function acceptPolicies() {
+    localStorage.setItem('codepen-policies-accepted', 'true');
+    document.getElementById('policy-modal').classList.remove('active');
+}
+
+function showPolicyModal() {
+    document.getElementById('policy-modal').classList.add('active');
+}
+
+function initPolicyCheck() {
+    if (!isPolicyAccepted()) {
+        showPolicyModal();
+    }
+
+    const check = document.getElementById('policy-check');
+    const acceptBtn = document.getElementById('policy-accept-btn');
+
+    check.addEventListener('change', () => {
+        acceptBtn.disabled = !check.checked;
+    });
+    acceptBtn.addEventListener('click', acceptPolicies);
+}
 

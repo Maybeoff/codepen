@@ -680,6 +680,16 @@ button:focus {
     font-size: 13px;
 }
 
+#policy-modal .setting-item label {
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+#policy-modal .setting-item a {
+    color: #667eea;
+    text-decoration: underline;
+}
+
 .saved-link-item {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
