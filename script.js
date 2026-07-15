@@ -1725,12 +1725,12 @@ function updateAuthUI(loggedIn) {
 }
 
 function openAuthModal() {
-    document.getElementById('auth-modal').style.display = 'flex';
+    document.getElementById('auth-modal').classList.add('active');
     checkAuth();
 }
 
 function closeAuthModal() {
-    document.getElementById('auth-modal').style.display = 'none';
+    document.getElementById('auth-modal').classList.remove('active');
 }
 
 // Register
