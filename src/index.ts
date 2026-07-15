@@ -197,27 +197,14 @@ app.put('/api/auth/password', async (c) => {
     return c.json({ success: false, error: 'Не авторизован' }, 401);
   }
 
-  const { currentPassword, newPassword } = await c.req.json();
+  const { newPassword } = await c.req.json();
 
-  if (!currentPassword || !newPassword) {
-    return c.json({ success: false, error: 'Заполните оба поля' }, 400);
+  if (!newPassword) {
+    return c.json({ success: false, error: 'Введите новый пароль' }, 400);
   }
 
   if (newPassword.length < 6) {
     return c.json({ success: false, error: 'Новый пароль: минимум 6 символов' }, 400);
-  }
-
-  const user = await c.env.DB.prepare(
-    `SELECT password_hash FROM users WHERE id = ?`
-  ).bind(authUser.userId).first();
-
-  if (!user) {
-    return c.json({ success: false, error: 'Пользователь не найден' }, 404);
-  }
-
-  const valid = await verifyPassword(currentPassword, user.password_hash as string);
-  if (!valid) {
-    return c.json({ success: false, error: 'Неверный текущий пароль' }, 400);
   }
 
   const newHash = await hashPassword(newPassword);
