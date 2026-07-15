@@ -1818,6 +1818,42 @@ function authLogout() {
     showToast('Вы вышли из аккаунта', 'info');
 }
 
+// Change password
+async function authChangePassword() {
+    const newPassword = document.getElementById('auth-new-password').value;
+    const errEl = document.getElementById('auth-password-error');
+    const okEl = document.getElementById('auth-password-success');
+
+    errEl.style.display = 'none';
+    okEl.style.display = 'none';
+
+    if (!newPassword) {
+        errEl.textContent = 'Введите новый пароль';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const r = await authFetch(API_BASE + '/api/auth/password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newPassword })
+        });
+        const data = await r.json();
+        if (data.success) {
+            okEl.textContent = 'Пароль изменён!';
+            okEl.style.display = 'block';
+            document.getElementById('auth-new-password').value = '';
+        } else {
+            errEl.textContent = data.error;
+            errEl.style.display = 'block';
+        }
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети';
+        errEl.style.display = 'block';
+    }
+}
+
 // Cloud projects
 let cloudProjects = [];
 
@@ -2005,6 +2041,11 @@ function initAuthListeners() {
     });
     document.getElementById('auth-register-password').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') authRegister();
+    });
+
+    document.getElementById('auth-change-password-btn').addEventListener('click', authChangePassword);
+    document.getElementById('auth-new-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') authChangePassword();
     });
 }
 

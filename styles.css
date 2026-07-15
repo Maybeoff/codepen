@@ -680,6 +680,16 @@ button:focus {
     font-size: 13px;
 }
 
+.auth-success {
+    background: #efe;
+    color: #060;
+    border: 1px solid #cfc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
 #policy-modal .setting-item label {
     font-size: 14px;
     line-height: 1.6;

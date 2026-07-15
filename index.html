@@ -370,6 +370,18 @@
                         </div>
                     </div>
                     <div class="settings-section">
+                        <h3>🔑 Сменить пароль</h3>
+                        <div class="setting-item">
+                            <label>Новый пароль:</label>
+                            <input type="password" id="auth-new-password" placeholder="Минимум 6 символов">
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-change-password-btn" class="settings-btn primary">Изменить пароль</button>
+                        </div>
+                        <div id="auth-password-error" class="auth-error" style="display: none;"></div>
+                        <div id="auth-password-success" class="auth-success" style="display: none;"></div>
+                    </div>
+                    <div class="settings-section">
                         <h3>☁️ Облачные проекты</h3>
                         <div class="setting-item">
                             <select id="cloud-project-select">
