@@ -1,9 +1,6 @@
 name: Build Electron Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       version:
@@ -77,9 +74,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMITS=$(git log --oneline -30)
-          
           echo "$COMMITS" > /tmp/commits.txt
-          
           jq -n \
             --arg commits "$(cat /tmp/commits.txt)" \
             --arg version "${{ github.event.inputs.version }}" \
@@ -88,7 +83,7 @@ jobs:
               "messages": [
                 {
                   "role": "system",
-                  "content": "Ты — разработчик. Напиши красивые заметки к релизу приложения на русском языке. Формат: Markdown. Используй эмодзи. Кратко опиши что нового. Не пиши заголовок — он уже есть."
+                  "content": "Ты — разработчик. Напиши красивые заметки к релизу приложения на русском языке. Формат: Markdown. Используй эмодзи. Кратко опиши что нового."
                 },
                 {
                   "role": "user",
@@ -98,26 +93,18 @@ jobs:
               "temperature": 0.7,
               "max_tokens": 1000
             }' > /tmp/payload.json
-          
           RESPONSE=$(curl -s "https://models.inference.ai.azure.com/chat/completions" \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Content-Type: application/json" \
             -d @/tmp/payload.json)
-          
           NOTES=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
-          
           if [ -z "$NOTES" ]; then
             NOTES="## Что нового в ${{ github.event.inputs.version }}
 
-### Основные изменения
 - Обновление фронтенда и бэкенда
-- Исправление ошибок и улучшение стабильности
-
-### Технические детали
-- Сборка для Windows, macOS и Linux
-- Автоматическая сборка через GitHub Actions"
+- Облачные проекты и авторизация
+- Сборка для Windows, macOS и Linux"
           fi
-          
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$NOTES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
