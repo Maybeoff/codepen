@@ -37,3 +37,10 @@ codepen-app/node_modules/
 # Сборка (если будет добавлена для веб-версии)
 dist/
 build/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example

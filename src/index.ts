@@ -345,7 +345,12 @@ app.get('/:id', async (c) => {
     // Если ?edit — редирект в редактор
     if (c.req.query('edit')) {
       const fullscreen = c.req.query('fullscreen');
-      const editorUrl = `https://maybe.su/codepen/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
+      const referer = c.req.header('referer') || c.req.header('origin') || '';
+      let origin = 'https://maybe.su';
+      if (referer) {
+        try { origin = new URL(referer).origin; } catch {}
+      }
+      const editorUrl = `${origin}/codepen/?load=${id}${fullscreen ? '&fullscreen' : ''}`;
       return c.redirect(editorUrl, 302);
     }
 
