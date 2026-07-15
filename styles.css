@@ -670,6 +670,16 @@ button:focus {
     padding: 10px;
 }
 
+.auth-error {
+    background: #fee;
+    color: #c00;
+    border: 1px solid #fcc;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
 .saved-link-item {
     background: #f8f9fa;
     border: 1px solid #dee2e6;

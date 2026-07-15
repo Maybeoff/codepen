@@ -36,6 +36,7 @@
             <button id="open-raw-btn" title="Открыть Raw в новой вкладке">📄 Raw</button>
             <button id="snow-btn" title="Включить/выключить снегопад">❄️ Snow</button>
             <button id="save-loaded-btn" title="Сохранить загруженный проект" style="display: none;">💾 Сохранить как</button>
+            <button id="auth-btn" title="Войти / Регистрация">👤 Войти</button>
             <button id="settings-btn" title="Настройки">⚙️ Настройки</button>
         </div>
     </header>
@@ -294,6 +295,98 @@
                     <div class="setting-item project-buttons">
                         <button id="prompt-modal-ok" class="settings-btn success">OK</button>
                         <button id="prompt-modal-cancel" class="settings-btn">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="auth-modal-title">Вход</h2>
+                <button id="close-auth-modal" class="close-btn">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Login Form -->
+                <div id="auth-login-form">
+                    <div class="settings-section">
+                        <h3>Вход</h3>
+                        <div class="setting-item">
+                            <label>Логин или Email:</label>
+                            <input type="text" id="auth-login-input" placeholder="Логин или email">
+                        </div>
+                        <div class="setting-item">
+                            <label>Пароль:</label>
+                            <input type="password" id="auth-login-password" placeholder="Пароль">
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-login-btn" class="settings-btn success">Войти</button>
+                            <button id="auth-show-register" class="settings-btn">Регистрация</button>
+                        </div>
+                        <div id="auth-login-error" class="auth-error" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="auth-register-form" style="display: none;">
+                    <div class="settings-section">
+                        <h3>Регистрация</h3>
+                        <div class="setting-item">
+                            <label>Логин:</label>
+                            <input type="text" id="auth-register-username" placeholder="3-30 символов, латиница и _">
+                        </div>
+                        <div class="setting-item">
+                            <label>Email:</label>
+                            <input type="email" id="auth-register-email" placeholder="email@example.com">
+                        </div>
+                        <div class="setting-item">
+                            <label>Пароль:</label>
+                            <input type="password" id="auth-register-password" placeholder="Минимум 6 символов">
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-register-btn" class="settings-btn success">Зарегистрироваться</button>
+                            <button id="auth-show-login" class="settings-btn">Назад ко входу</button>
+                        </div>
+                        <div id="auth-register-error" class="auth-error" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- User Info (shown when logged in) -->
+                <div id="auth-user-info" style="display: none;">
+                    <div class="settings-section">
+                        <h3>Аккаунт</h3>
+                        <div class="setting-item">
+                            <label>Пользователь:</label>
+                            <span id="auth-username-display"></span>
+                        </div>
+                        <div class="setting-item">
+                            <label>Email:</label>
+                            <span id="auth-email-display"></span>
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="auth-logout-btn" class="settings-btn danger">Выйти</button>
+                        </div>
+                    </div>
+                    <div class="settings-section">
+                        <h3>☁️ Облачные проекты</h3>
+                        <div class="setting-item">
+                            <select id="cloud-project-select">
+                                <option value="">-- Выберите проект --</option>
+                            </select>
+                        </div>
+                        <div class="setting-item project-buttons">
+                            <button id="cloud-load-btn" class="settings-btn primary">📥 Загрузить</button>
+                            <button id="cloud-save-btn" class="settings-btn primary">💾 Сохранить</button>
+                            <button id="cloud-save-as-btn" class="settings-btn primary">💾 Сохранить как</button>
+                            <button id="cloud-delete-btn" class="settings-btn danger">🗑 Удалить</button>
+                        </div>
+                        <div class="setting-item">
+                            <label>Название проекта:</label>
+                            <input type="text" id="cloud-project-name" placeholder="Название проекта">
+                        </div>
+                        <div id="cloud-status" class="auth-error" style="display: none;"></div>
                     </div>
                 </div>
             </div>

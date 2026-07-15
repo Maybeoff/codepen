@@ -1671,3 +1671,342 @@ function downloadQRCode() {
     showToast('QR-код скачан!', 'success');
 }
 
+// ==================== AUTH & CLOUD ====================
+
+const API_BASE = 'https://codepen-api.maybeyoou.workers.dev';
+let authToken = localStorage.getItem('codepen-auth-token') || null;
+let currentUser = null;
+
+function authHeaders() {
+    return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
+}
+
+async function authFetch(url, options = {}) {
+    const headers = { ...authHeaders(), ...(options.headers || {}) };
+    return fetch(url, { ...options, headers });
+}
+
+async function checkAuth() {
+    if (!authToken) { updateAuthUI(false); return; }
+    try {
+        const r = await authFetch(API_BASE + '/api/auth/me');
+        const data = await r.json();
+        if (data.success) {
+            currentUser = data.user;
+            updateAuthUI(true);
+        } else {
+            authToken = null;
+            localStorage.removeItem('codepen-auth-token');
+            updateAuthUI(false);
+        }
+    } catch { updateAuthUI(false); }
+}
+
+function updateAuthUI(loggedIn) {
+    const btn = document.getElementById('auth-btn');
+    const loginForm = document.getElementById('auth-login-form');
+    const registerForm = document.getElementById('auth-register-form');
+    const userInfo = document.getElementById('auth-user-info');
+
+    if (loggedIn && currentUser) {
+        btn.textContent = '👤 ' + currentUser.username;
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'none';
+        userInfo.style.display = 'block';
+        document.getElementById('auth-username-display').textContent = currentUser.username;
+        document.getElementById('auth-email-display').textContent = currentUser.email;
+        loadCloudProjects();
+    } else {
+        btn.textContent = '👤 Войти';
+        loginForm.style.display = 'block';
+        registerForm.style.display = 'none';
+        userInfo.style.display = 'none';
+    }
+}
+
+function openAuthModal() {
+    document.getElementById('auth-modal').style.display = 'flex';
+    checkAuth();
+}
+
+function closeAuthModal() {
+    document.getElementById('auth-modal').style.display = 'none';
+}
+
+// Register
+async function authRegister() {
+    const username = document.getElementById('auth-register-username').value.trim();
+    const email = document.getElementById('auth-register-email').value.trim();
+    const password = document.getElementById('auth-register-password').value;
+    const errEl = document.getElementById('auth-register-error');
+
+    if (!username || !email || !password) {
+        errEl.textContent = 'Заполните все поля';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const r = await fetch(API_BASE + '/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        });
+        const data = await r.json();
+        if (data.success) {
+            authToken = data.token;
+            localStorage.setItem('codepen-auth-token', authToken);
+            currentUser = data.user;
+            updateAuthUI(true);
+            showToast('Регистрация успешна!', 'success');
+        } else {
+            errEl.textContent = data.error;
+            errEl.style.display = 'block';
+        }
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети';
+        errEl.style.display = 'block';
+    }
+}
+
+// Login
+async function authLogin() {
+    const login = document.getElementById('auth-login-input').value.trim();
+    const password = document.getElementById('auth-login-password').value;
+    const errEl = document.getElementById('auth-login-error');
+
+    if (!login || !password) {
+        errEl.textContent = 'Заполните все поля';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        const r = await fetch(API_BASE + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login, password })
+        });
+        const data = await r.json();
+        if (data.success) {
+            authToken = data.token;
+            localStorage.setItem('codepen-auth-token', authToken);
+            currentUser = data.user;
+            updateAuthUI(true);
+            showToast('Вход выполнен!', 'success');
+        } else {
+            errEl.textContent = data.error;
+            errEl.style.display = 'block';
+        }
+    } catch (e) {
+        errEl.textContent = 'Ошибка сети';
+        errEl.style.display = 'block';
+    }
+}
+
+// Logout
+function authLogout() {
+    authToken = null;
+    currentUser = null;
+    localStorage.removeItem('codepen-auth-token');
+    updateAuthUI(false);
+    showToast('Вы вышли из аккаунта', 'info');
+}
+
+// Cloud projects
+let cloudProjects = [];
+
+async function loadCloudProjects() {
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects');
+        const data = await r.json();
+        if (data.success) {
+            cloudProjects = data.projects;
+            const select = document.getElementById('cloud-project-select');
+            select.innerHTML = '<option value="">-- Выберите проект --</option>';
+            data.projects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error loading cloud projects:', e);
+    }
+}
+
+async function cloudSaveProject() {
+    if (!currentUser) return;
+    const name = document.getElementById('cloud-project-name').value.trim() || projects[currentProject]?.name || 'Проект';
+    const statusEl = document.getElementById('cloud-status');
+
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name,
+                html: editors.html.getValue(),
+                css: editors.css.getValue(),
+                js: editors.js.getValue(),
+                library: libraryValue
+            })
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('Проект сохранён в облако!', 'success');
+            loadCloudProjects();
+        } else {
+            statusEl.textContent = data.error;
+            statusEl.style.display = 'block';
+        }
+    } catch (e) {
+        statusEl.textContent = 'Ошибка сети';
+        statusEl.style.display = 'block';
+    }
+}
+
+async function cloudUpdateProject() {
+    if (!currentUser) return;
+    const select = document.getElementById('cloud-project-select');
+    const projectId = select.value;
+    if (!projectId) { showToast('Выберите проект', 'error'); return; }
+
+    saveCurrentProject();
+    const libraryValue = localStorage.getItem('codepen-library') || '';
+    const name = document.getElementById('cloud-project-name').value.trim();
+
+    try {
+        const body = {
+            html: editors.html.getValue(),
+            css: editors.css.getValue(),
+            js: editors.js.getValue(),
+            library: libraryValue
+        };
+        if (name) body.name = name;
+
+        const r = await authFetch(API_BASE + '/api/user/projects/' + projectId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('Проект обновлён в облаке!', 'success');
+            loadCloudProjects();
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка сети', 'error');
+    }
+}
+
+async function cloudLoadProject() {
+    if (!currentUser) return;
+    const select = document.getElementById('cloud-project-select');
+    const projectId = select.value;
+    if (!projectId) { showToast('Выберите проект', 'error'); return; }
+
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects/' + projectId);
+        const data = await r.json();
+        if (data.success) {
+            const p = data.project;
+            if (p.html) editors.html.setValue(p.html);
+            if (p.css) editors.css.setValue(p.css);
+            if (p.js) editors.js.setValue(p.js);
+            if (p.library) {
+                const ls = document.getElementById('library-select');
+                if (ls) ls.value = p.library;
+                const mls = document.getElementById('modal-library-select');
+                if (mls) mls.value = p.library;
+            }
+            document.getElementById('cloud-project-name').value = p.name;
+            showToast('Проект загружен из облака!', 'success');
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка сети', 'error');
+    }
+}
+
+async function cloudDeleteProject() {
+    if (!currentUser) return;
+    const select = document.getElementById('cloud-project-select');
+    const projectId = select.value;
+    if (!projectId) { showToast('Выберите проект', 'error'); return; }
+
+    if (!confirm('Удалить проект из облака?')) return;
+
+    try {
+        const r = await authFetch(API_BASE + '/api/user/projects/' + projectId, {
+            method: 'DELETE'
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('Проект удалён', 'success');
+            loadCloudProjects();
+        } else {
+            showToast(data.error, 'error');
+        }
+    } catch (e) {
+        showToast('Ошибка сети', 'error');
+    }
+}
+
+function initAuthListeners() {
+    document.getElementById('auth-btn').addEventListener('click', openAuthModal);
+    document.getElementById('close-auth-modal').addEventListener('click', closeAuthModal);
+    document.getElementById('auth-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'auth-modal') closeAuthModal();
+    });
+
+    document.getElementById('auth-show-register').addEventListener('click', () => {
+        document.getElementById('auth-login-form').style.display = 'none';
+        document.getElementById('auth-register-form').style.display = 'block';
+        document.getElementById('auth-modal-title').textContent = 'Регистрация';
+    });
+
+    document.getElementById('auth-show-login').addEventListener('click', () => {
+        document.getElementById('auth-login-form').style.display = 'block';
+        document.getElementById('auth-register-form').style.display = 'none';
+        document.getElementById('auth-modal-title').textContent = 'Вход';
+    });
+
+    document.getElementById('auth-login-btn').addEventListener('click', authLogin);
+    document.getElementById('auth-register-btn').addEventListener('click', authRegister);
+    document.getElementById('auth-logout-btn').addEventListener('click', authLogout);
+
+    document.getElementById('cloud-save-btn').addEventListener('click', cloudSaveProject);
+    document.getElementById('cloud-save-as-btn').addEventListener('click', cloudSaveProject);
+    document.getElementById('cloud-load-btn').addEventListener('click', cloudLoadProject);
+    document.getElementById('cloud-delete-btn').addEventListener('click', cloudDeleteProject);
+
+    document.getElementById('cloud-project-select').addEventListener('change', (e) => {
+        const project = cloudProjects.find(p => p.id == e.target.value);
+        if (project) {
+            document.getElementById('cloud-project-name').value = project.name;
+        }
+    });
+
+    document.getElementById('auth-login-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') authLogin();
+    });
+    document.getElementById('auth-register-password').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') authRegister();
+    });
+}
+
+// Add initAuthListeners to DOMContentLoaded
+const _origDOMContentLoaded = document.addEventListener;
+document.addEventListener('DOMContentLoaded', () => {
+    initAuthListeners();
+    checkAuth();
+});
+
