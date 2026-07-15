@@ -1126,7 +1126,7 @@ function initializeEventListeners() {
                 library: libraryValue,
                 projectName: projects[currentProject]?.name || 'Project'
             };
-            showToast('Saving project...', 'info');
+            showToast('Сохранение проекта...', 'info');
             const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1136,13 +1136,13 @@ function initializeEventListeners() {
             if (result.success) {
                 const shareUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
                 navigator.clipboard.writeText(shareUrl)
-                    .then(() => showToast('Link copied!', 'success'))
-                    .catch(() => showToast('Link: ' + shareUrl, 'success'));
+                    .then(() => showToast('Ссылка скопирована!', 'success'))
+                    .catch(() => showToast('Ссылка: ' + shareUrl, 'success'));
             } else {
-                showToast('Error: ' + (result.error || 'Unknown error'), 'error');
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
             }
         } catch (error) {
-            showToast('Network error: ' + error.message, 'error');
+            showToast('Ошибка сети: ' + error.message, 'error');
         }
     });
 
@@ -1157,7 +1157,7 @@ function initializeEventListeners() {
                 library: libraryValue,
                 projectName: projects[currentProject]?.name || 'Project'
             };
-            showToast('Saving project...', 'info');
+            showToast('Сохранение проекта...', 'info');
             const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1167,13 +1167,13 @@ function initializeEventListeners() {
             if (result.success) {
                 const shareUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}?fullscreen`;
                 navigator.clipboard.writeText(shareUrl)
-                    .then(() => showToast('Link copied!', 'success'))
-                    .catch(() => showToast('Link: ' + shareUrl, 'success'));
+                    .then(() => showToast('Ссылка скопирована!', 'success'))
+                    .catch(() => showToast('Ссылка: ' + shareUrl, 'success'));
             } else {
-                showToast('Error: ' + (result.error || 'Unknown error'), 'error');
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
             }
         } catch (error) {
-            showToast('Network error: ' + error.message, 'error');
+            showToast('Ошибка сети: ' + error.message, 'error');
         }
     });
 
@@ -1188,7 +1188,7 @@ function initializeEventListeners() {
                 library: libraryValue,
                 projectName: projects[currentProject]?.name || 'Project'
             };
-            showToast('Saving project...', 'info');
+            showToast('Сохранение проекта...', 'info');
             const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1198,13 +1198,13 @@ function initializeEventListeners() {
             if (result.success) {
                 const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
                 navigator.clipboard.writeText(rawUrl)
-                    .then(() => showToast('Raw link copied!', 'success'))
-                    .catch(() => showToast('Raw link: ' + rawUrl, 'success'));
+                    .then(() => showToast('Raw ссылка скопирована!', 'success'))
+                    .catch(() => showToast('Raw ссылка: ' + rawUrl, 'success'));
             } else {
-                showToast('Error: ' + (result.error || 'Unknown error'), 'error');
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
             }
         } catch (error) {
-            showToast('Network error: ' + error.message, 'error');
+            showToast('Ошибка сети: ' + error.message, 'error');
         }
     });
 
@@ -1219,7 +1219,7 @@ function initializeEventListeners() {
                 library: libraryValue,
                 projectName: projects[currentProject]?.name || 'Project'
             };
-            showToast('Updating project...', 'info');
+            showToast('Обновление проекта...', 'info');
             const response = await fetch('https://codepen-api.maybeyoou.workers.dev/api/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1229,13 +1229,13 @@ function initializeEventListeners() {
             if (result.success) {
                 const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
                 navigator.clipboard.writeText(rawUrl)
-                    .then(() => showToast('Raw link updated and copied!', 'success'))
-                    .catch(() => showToast('Raw link: ' + rawUrl, 'success'));
+                    .then(() => showToast('Raw ссылка обновлена и скопирована!', 'success'))
+                    .catch(() => showToast('Raw ссылка: ' + rawUrl, 'success'));
             } else {
-                showToast('Error: ' + (result.error || 'Unknown error'), 'error');
+                showToast('Ошибка: ' + (result.error || 'Неизвестная ошибка'), 'error');
             }
         } catch (error) {
-            showToast('Network error: ' + error.message, 'error');
+            showToast('Ошибка сети: ' + error.message, 'error');
         }
     });
 
@@ -1535,7 +1535,7 @@ function openQRModal() {
     const modal = document.getElementById('qr-modal');
     const projectName = projects[currentProject]?.name || 'Project';
     document.getElementById('qr-project-name').value = projectName;
-    document.getElementById('qr-project-url').value = 'Creating link...';
+    document.getElementById('qr-project-url').value = 'Создание ссылки...';
     document.getElementById('qr-code-display').innerHTML = '';
     document.getElementById('download-qr-btn').style.display = 'none';
     modal.classList.add('active');
@@ -1563,12 +1563,12 @@ function openQRModal() {
             document.getElementById('qr-project-url').value = url;
             return generateQRCodeFromUrl(url);
         } else {
-            throw new Error(result.error || 'Failed to create link');
+            throw new Error(result.error || 'Не удалось создать ссылку');
         }
     })
     .catch(err => {
-        document.getElementById('qr-project-url').value = 'Error: ' + err.message;
-        showToast('Error: ' + err.message, 'error');
+        document.getElementById('qr-project-url').value = 'Ошибка: ' + err.message;
+        showToast('Ошибка: ' + err.message, 'error');
     });
 }
 
@@ -1607,8 +1607,8 @@ async function generateQRCodeFromUrl(url) {
         downloadBtn.style.display = 'inline-flex';
     } catch (error) {
         qrLoading.style.display = 'none';
-        qrDisplay.innerHTML = '<p style="color:red;">Error generating QR code: ' + error.message + '</p>';
-        showToast('QR error: ' + error.message, 'error');
+        qrDisplay.innerHTML = '<p style="color:red;">Ошибка генерации QR-кода: ' + error.message + '</p>';
+        showToast('Ошибка QR: ' + error.message, 'error');
     }
 }
 
@@ -1616,7 +1616,7 @@ function downloadQRCode() {
     const qrDisplay = document.getElementById('qr-code-display');
     const svgElement = qrDisplay.querySelector('svg');
     if (!svgElement) {
-        showToast('QR code not found', 'error');
+        showToast('QR-код не найден', 'error');
         return;
     }
     const svgData = new XMLSerializer().serializeToString(svgElement);
@@ -1629,6 +1629,6 @@ function downloadQRCode() {
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(url);
-    showToast('QR code downloaded!', 'success');
+    showToast('QR-код скачан!', 'success');
 }
 
