@@ -1195,7 +1195,7 @@ function initializeEventListeners() {
             const result = await safeJsonParse(response);
             
             if (result.success) {
-                const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
+                const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
                 
                 // Сохраняем raw ссылку
                 saveRawLink({
@@ -1803,7 +1803,7 @@ async function createRawLink() {
         const result = await safeJsonParse(response);
         
         if (result.success) {
-            const rawUrl = `https://codepen.fem-boy.ru/${result.id}`;
+            const rawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
             
             // Сохраняем raw ссылку
             saveRawLink({
@@ -1915,7 +1915,7 @@ async function updateProjectLink() {
         const result = await safeJsonParse(response);
         
         if (result.success) {
-            const newRawUrl = `https://codepen.fem-boy.ru/${result.id}`;
+            const newRawUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
             
             // Обновляем сохраненную ссылку
             const updatedLink = {
@@ -2111,7 +2111,7 @@ async function createShortLinkForQR(mode = 'fullscreen') {
             const result = await safeJsonParse(response);
             
             if (result.success) {
-                finalUrl = `https://codepen.fem-boy.ru/${result.id}`;
+                finalUrl = `https://codepen-api.maybeyoou.workers.dev/${result.id}`;
                 
                 // Сохраняем raw ссылку
                 saveRawLink({
